@@ -1,0 +1,6 @@
+{
+  "extends": "@scholar-seek/config/tsconfig.base.json",
+  "compilerOptions": {
+    "strictNullChecks": true
+  }
+}
