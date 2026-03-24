@@ -346,57 +346,6 @@ function generateFacets(papers: Paper[]): Facets {
 	};
 }
 
-function matchesFilters(
-	paper: Paper,
-	params: {
-		authorFilter?: string;
-		journalFilter?: string[];
-		keywordFilter?: string[];
-		yearFrom?: number;
-		yearTo?: number;
-	}
-): boolean {
-	if (params.authorFilter) {
-		const authorLower = params.authorFilter.toLowerCase();
-		const matches = paper.authors.some((a) =>
-			a.toLowerCase().includes(authorLower)
-		);
-		if (!matches) {
-			return false;
-		}
-	}
-
-	if (
-		params.journalFilter &&
-		params.journalFilter.length > 0 &&
-		!params.journalFilter.includes(paper.journal)
-	) {
-		return false;
-	}
-
-	if (params.keywordFilter && params.keywordFilter.length > 0) {
-		if (!paper.keywords) {
-			return false;
-		}
-		const matches = params.keywordFilter.some((k) =>
-			paper.keywords?.includes(k)
-		);
-		if (!matches) {
-			return false;
-		}
-	}
-
-	const paperYear = Number.parseInt(paper.publishedAt.split("-")[0] ?? "0", 10);
-	if (params.yearFrom !== undefined && paperYear < params.yearFrom) {
-		return false;
-	}
-	if (params.yearTo !== undefined && paperYear > params.yearTo) {
-		return false;
-	}
-
-	return true;
-}
-
 function sortPapers(papers: Paper[], sortBy: string): Paper[] {
 	const sorted = [...papers];
 
@@ -431,6 +380,7 @@ export async function searchPapers(params: {
 
 	let results = [...MOCK_PAPERS];
 
+	// Step 1: Apply text query filter
 	if (params.q) {
 		const queryLower = params.q.toLowerCase();
 		results = results.filter(
@@ -443,8 +393,51 @@ export async function searchPapers(params: {
 		);
 	}
 
-	results = results.filter((paper) => matchesFilters(paper, params));
+	// Step 2: Apply author filter (not a facet-based filter)
+	if (params.authorFilter) {
+		const authorLower = params.authorFilter.toLowerCase();
+		results = results.filter((paper) =>
+			paper.authors.some((a) => a.toLowerCase().includes(authorLower))
+		);
+	}
 
+	// Step 3: Apply date range filter (not a facet-based filter)
+	results = results.filter((paper) => {
+		const paperYear = Number.parseInt(
+			paper.publishedAt.split("-")[0] ?? "0",
+			10
+		);
+		if (params.yearFrom !== undefined && paperYear < params.yearFrom) {
+			return false;
+		}
+		if (params.yearTo !== undefined && paperYear > params.yearTo) {
+			return false;
+		}
+		return true;
+	});
+
+	// Step 4: Generate facets from results BEFORE applying facet filters
+	// This ensures users see all available facet options
+	const facets = generateFacets(results);
+
+	// Step 5: Apply journal facet filter
+	if (params.journalFilter && params.journalFilter.length > 0) {
+		results = results.filter((paper) =>
+			params.journalFilter?.includes(paper.journal)
+		);
+	}
+
+	// Step 6: Apply keyword facet filter
+	if (params.keywordFilter && params.keywordFilter.length > 0) {
+		results = results.filter((paper) => {
+			if (!paper.keywords) {
+				return false;
+			}
+			return params.keywordFilter?.some((k) => paper.keywords?.includes(k));
+		});
+	}
+
+	// Step 7: Apply sorting
 	if (params.sortBy) {
 		results = sortPapers(results, params.sortBy);
 	}
@@ -455,8 +448,6 @@ export async function searchPapers(params: {
 	const start = (page - 1) * pageSize;
 	const end = start + pageSize;
 	const paginatedResults = results.slice(start, end);
-
-	const facets = generateFacets(results);
 
 	return {
 		papers: paginatedResults,

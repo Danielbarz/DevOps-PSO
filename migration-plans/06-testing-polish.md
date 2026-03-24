@@ -31,7 +31,7 @@ bun run check-types
 
 **Command**:
 ```bash
-bun x ultracite fix
+bun x ultracite fix apps/web packages
 ```
 
 **Expected**: All code formatted correctly. Fix any remaining issues.
@@ -42,7 +42,7 @@ bun x ultracite fix
 
 **Command**:
 ```bash
-bun x ultracite check
+bun x ultracite check apps/web packages
 ```
 
 **Expected**: No lint errors. Address any remaining issues.
@@ -65,44 +65,44 @@ bun run dev
 Run through the following manual tests:
 
 #### Home Page Tests
-- [ ] Home page loads correctly
-- [ ] Hero section displays with glassmorphic search bar
-- [ ] Featured topics grid shows 4 items
-- [ ] Clicking a topic navigates to search with correct query
-- [ ] "/" keyboard shortcut focuses search input
-- [ ] Search button navigates to search page
+- [x] Home page loads correctly
+- [x] Hero section displays with glassmorphic search bar
+- [x] Featured topics grid shows 4 items
+- [x] Clicking a topic navigates to search with correct query
+- [x] "/" keyboard shortcut focuses search input
+- [x] Search button navigates to search page
 
 #### Search Page Tests
-- [ ] Search page loads with URL query parameter
-- [ ] Search bar shows default value from URL
-- [ ] Results display correctly (or empty state shown)
-- [ ] Pagination works (next, previous, page numbers)
-- [ ] Page size selector changes results per page
-- [ ] Sort dropdown changes sort order
-- [ ] Filters panel shows on desktop (sidebar)
-- [ ] Filter panel collapsible on mobile
-- [ ] Author filter works (input + blur/enter)
-- [ ] Date range filter works (sliders)
+- [x] Search page loads with URL query parameter
+- [x] Search bar shows default value from URL
+- [x] Results display correctly (or empty state shown)
+- [x] Pagination works (next, previous, page numbers)
+- [x] Page size selector changes results per page
+- [x] Sort dropdown changes sort order
+- [x] Filters panel shows on desktop (sidebar)
+- [x] Filter panel collapsible on mobile
+- [x] Author filter works (input + blur/enter)
+- [x] Date range filter works (sliders)
 - [ ] Journal facet filtering works
 - [ ] Keyword facet filtering works
-- [ ] Active filters show as chips
-- [ ] Clear all filters button works
-- [ ] Individual filter removal works
+- [x] Active filters show as chips
+- [x] Clear all filters button works
+- [x] Individual filter removal works
 
 #### Paper Detail Page Tests
-- [ ] Paper detail page loads with correct ID
+- [x] Paper detail page loads with correct ID
 - [ ] Back to search link works
-- [ ] Paper metadata displays correctly
-- [ ] DOI link opens correctly
-- [ ] Source link opens correctly
-- [ ] Keywords display as badges
-- [ ] Related papers section shows (if available)
-- [ ] Clicking related paper navigates correctly
+- [x] Paper metadata displays correctly
+- [x] DOI link opens correctly
+- [x] Source link opens correctly
+- [x] Keywords display as badges
+- [x] Related papers section shows (if available)
+- [x] Clicking related paper navigates correctly
 
 #### Theme Tests
-- [ ] Theme toggle switches between light/dark
-- [ ] Theme persists on page reload (localStorage)
-- [ ] System preference respected on first load
+- [x] Theme toggle switches between light/dark
+- [x] Theme persists on page reload (localStorage)
+- [x] System preference respected on first load
 
 #### Responsive Tests
 - [ ] Mobile layout (< 768px) works correctly
@@ -290,7 +290,7 @@ bun run check-types
 
 **Command**:
 ```bash
-bun x ultracite fix
+bun x ultracite fix apps/web packages
 ```
 
 ---
@@ -365,7 +365,7 @@ Ensure `apps/web/package.json` has all required dependencies:
 ## Success Criteria
 
 - [ ] `bun run check-types` passes with no errors
-- [ ] `bun x ultracite check` passes with no errors
+- [ ] `bun x ultracite check apps/web packages` passes with no errors
 - [ ] `bun run dev` starts successfully
 - [ ] All pages render correctly
 - [ ] Navigation works between pages

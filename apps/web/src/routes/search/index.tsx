@@ -3,59 +3,96 @@ import {
 	useNavigate,
 	useSearch,
 } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { z } from "zod";
 import { SearchBar } from "../../components/search/search-bar";
 import { SearchResults } from "../../components/search/search-results";
+import { saveSearchState } from "../../lib/search-state";
+import type { SortBy } from "../../types/paper";
 
 const searchSchema = z.object({
 	q: z.string().optional(),
 	page: z.coerce.number().optional().default(1),
 	pageSize: z.coerce.number().optional().default(10),
+	author: z.string().optional(),
+	journal: z.union([z.string(), z.array(z.string())]).optional(),
+	keyword: z.union([z.string(), z.array(z.string())]).optional(),
+	yearFrom: z.coerce.number().optional(),
+	yearTo: z.coerce.number().optional(),
+	sortBy: z
+		.enum(["relevance", "date_desc", "date_asc", "title_asc", "author_asc"])
+		.optional(),
 });
 
 export const Route = createFileRoute("/search/")({
 	component: SearchPage,
 	validateSearch: searchSchema,
-	head: ({ search }) => ({
-		meta: [
-			{
-				title: search.q
-					? `Search results for "${search.q}" - Scholar Seek`
-					: "Search Papers - Scholar Seek",
-			},
-			{
-				name: "description",
-				content: search.q
-					? `Find academic papers and articles related to ${search.q}.`
-					: "Search for academic papers, articles, and publications.",
-			},
-		],
-	}),
 });
 
 function SearchPage() {
 	const navigate = useNavigate();
-	const { q = "", page = 1, pageSize = 10 } = useSearch({ from: "/search/" });
+	const search = useSearch({ from: "/search/" });
+	const {
+		q = "",
+		page = 1,
+		pageSize = 10,
+		author,
+		journal,
+		keyword,
+		yearFrom,
+		yearTo,
+		sortBy,
+	} = search;
+
+	// Save search state for "Back to search" functionality
+	useEffect(() => {
+		if (typeof window !== "undefined") {
+			saveSearchState({
+				url: window.location.href,
+				q,
+				page,
+				pageSize,
+			});
+		}
+	}, [q, page, pageSize]);
 
 	const handleSearch = (query: string) => {
 		navigate({
 			to: "/search",
-			search: { q: query, page: 1, pageSize },
+			search: { ...search, q: query, page: 1 },
 		});
 	};
 
 	const handlePageChange = (newPage: number) => {
 		navigate({
 			to: "/search",
-			search: { q, page: newPage, pageSize },
+			search: { ...search, page: newPage },
 		});
 	};
 
 	const handlePageSizeChange = (newSize: number) => {
 		navigate({
 			to: "/search",
-			search: { q, page: 1, pageSize: newSize },
+			search: { ...search, page: 1, pageSize: newSize },
 		});
+	};
+
+	const normalizeToArray = (
+		value: string | string[] | undefined
+	): string[] | undefined => {
+		if (!value) {
+			return undefined;
+		}
+		return Array.isArray(value) ? value : [value];
+	};
+
+	const initialFilters = {
+		authorFilter: author,
+		journalFilter: normalizeToArray(journal),
+		keywordFilter: normalizeToArray(keyword),
+		yearFrom,
+		yearTo,
+		sortBy: sortBy as SortBy | undefined,
 	};
 
 	return (
@@ -66,6 +103,7 @@ function SearchPage() {
 				</div>
 			</div>
 			<SearchResults
+				initialFilters={initialFilters}
 				onPageChange={handlePageChange}
 				onPageSizeChange={handlePageSizeChange}
 				page={page}

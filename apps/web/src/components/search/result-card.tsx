@@ -13,18 +13,33 @@ interface ResultCardProps {
 	paper: Paper;
 }
 
+function storeSearchState() {
+	if (typeof window !== "undefined") {
+		sessionStorage.setItem("lastSearchUrl", window.location.href);
+	}
+}
+
 export function ResultCard({ paper }: ResultCardProps) {
 	return (
 		<Card className="transition-colors hover:border-primary">
 			<CardHeader>
-				<Link params={{ id: paper.id }} to="/paper/$id">
+				<Link
+					onClick={storeSearchState}
+					params={{ id: paper.id }}
+					to="/paper/$id"
+				>
 					<CardTitle className="line-clamp-2 text-lg hover:text-primary">
 						{paper.title}
 					</CardTitle>
 				</Link>
 			</CardHeader>
 			<CardContent className="space-y-2">
-				<Link className="block" params={{ id: paper.id }} to="/paper/$id">
+				<Link
+					className="block"
+					onClick={storeSearchState}
+					params={{ id: paper.id }}
+					to="/paper/$id"
+				>
 					<p className="line-clamp-2 text-muted-foreground text-sm">
 						{paper.abstract}
 					</p>

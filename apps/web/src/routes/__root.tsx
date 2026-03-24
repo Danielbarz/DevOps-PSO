@@ -1,4 +1,5 @@
 import { Toaster } from "@scholar-seek/ui/components/sonner";
+import type { QueryClient } from "@tanstack/react-query";
 import {
 	createRootRouteWithContext,
 	HeadContent,
@@ -12,7 +13,9 @@ import Header from "../components/layout/header";
 
 import appCss from "../index.css?url";
 
-export type RouterAppContext = {};
+export interface RouterAppContext {
+	queryClient: QueryClient;
+}
 
 export const Route = createRootRouteWithContext<RouterAppContext>()({
 	head: () => ({

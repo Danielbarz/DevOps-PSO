@@ -1,5 +1,6 @@
 import { Skeleton } from "@scholar-seek/ui/components/skeleton";
 import { X } from "lucide-react";
+import { createContext, type ReactNode, useContext, useState } from "react";
 import { useSearchPapers } from "../../lib/hooks/use-papers";
 import type { Facets, SortBy } from "../../types/paper";
 import { FilterProvider, useFilterContext } from "./active-filters";
@@ -8,6 +9,31 @@ import { PageSizeSelector } from "./page-size-selector";
 import { Pagination } from "./pagination";
 import { ResultCard } from "./result-card";
 import { SortDropdown } from "./sort-dropdown";
+
+interface FacetsContextValue {
+	facets: Facets | undefined;
+	setFacets: (facets: Facets | undefined) => void;
+}
+
+const FacetsContext = createContext<FacetsContextValue>({
+	facets: undefined,
+	setFacets: () => {
+		// default no-op
+	},
+});
+
+function FacetsProvider({ children }: { children: ReactNode }) {
+	const [facets, setFacets] = useState<Facets | undefined>(undefined);
+	return (
+		<FacetsContext.Provider value={{ facets, setFacets }}>
+			{children}
+		</FacetsContext.Provider>
+	);
+}
+
+function useFacetsContext() {
+	return useContext(FacetsContext);
+}
 
 function ActiveFiltersDisplay() {
 	const {
@@ -108,6 +134,7 @@ function SearchResultsContent({
 	onPageChange,
 	onPageSizeChange,
 }: SearchResultsContentProps) {
+	const { setFacets } = useFacetsContext();
 	const {
 		authorFilter,
 		journalFilter,
@@ -134,6 +161,11 @@ function SearchResultsContent({
 		yearTo: hasYearFilter ? yearTo : undefined,
 		sortBy,
 	});
+
+	// Update facets when data changes
+	if (data?.facets) {
+		setFacets(data.facets);
+	}
 
 	if (!query) {
 		return (
@@ -253,19 +285,41 @@ export function SearchResults({
 }: SearchResultsProps) {
 	return (
 		<FilterProvider search={initialFilters}>
-			<div className="flex gap-6">
-				<FilterPanel facets={undefined} />
-
-				<div className="min-w-0 flex-1">
-					<SearchResultsContent
-						onPageChange={onPageChange}
-						onPageSizeChange={onPageSizeChange}
-						page={page}
-						pageSize={pageSize}
-						query={query}
-					/>
-				</div>
-			</div>
+			<FacetsProvider>
+				<SearchResultsLayout
+					onPageChange={onPageChange}
+					onPageSizeChange={onPageSizeChange}
+					page={page}
+					pageSize={pageSize}
+					query={query}
+				/>
+			</FacetsProvider>
 		</FilterProvider>
+	);
+}
+
+function SearchResultsLayout({
+	query,
+	page,
+	pageSize,
+	onPageChange,
+	onPageSizeChange,
+}: SearchResultsContentProps) {
+	const { facets } = useFacetsContext();
+
+	return (
+		<div className="flex gap-6">
+			<FilterPanel facets={facets} />
+
+			<div className="min-w-0 flex-1">
+				<SearchResultsContent
+					onPageChange={onPageChange}
+					onPageSizeChange={onPageSizeChange}
+					page={page}
+					pageSize={pageSize}
+					query={query}
+				/>
+			</div>
+		</div>
 	);
 }

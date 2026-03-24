@@ -8,8 +8,10 @@ import {
 import { Separator } from "@scholar-seek/ui/components/separator";
 import { Skeleton } from "@scholar-seek/ui/components/skeleton";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { z } from "zod";
 import { usePaper, useRelatedPapers } from "../../lib/hooks/use-papers";
+import { getSearchState } from "../../lib/search-state";
 import { formatDate } from "../../lib/utils";
 
 const paperSchema = z.object({
@@ -33,6 +35,14 @@ function PaperPage() {
 	const { id } = Route.useParams();
 	const { data: paper, isLoading, error } = usePaper(id);
 	const { data: related } = useRelatedPapers(id);
+	const [backUrl, setBackUrl] = useState("/search");
+
+	useEffect(() => {
+		const searchState = getSearchState();
+		if (searchState?.url) {
+			setBackUrl(searchState.url);
+		}
+	}, []);
 
 	if (isLoading) {
 		return (
@@ -63,12 +73,12 @@ function PaperPage() {
 		<div className="container mx-auto px-4 py-8">
 			<div className="mx-auto max-w-3xl space-y-6">
 				<div>
-					<Link
+					<a
 						className="text-muted-foreground text-sm hover:underline"
-						to="/search"
+						href={backUrl}
 					>
 						← Back to search
-					</Link>
+					</a>
 					<h1 className="mt-4 font-bold text-3xl">{paper.title}</h1>
 					<div className="mt-4 flex flex-wrap gap-2">
 						{paper.authors.map((author) => (
