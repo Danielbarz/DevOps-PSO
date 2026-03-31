@@ -1,14 +1,17 @@
 {
-  "name": "web",
+  "name": "@scholar-seek/web",
   "private": true,
   "type": "module",
   "scripts": {
     "build": "vite build",
+    "check-types": "tsc --noEmit",
     "serve": "vite preview",
     "dev": "vite dev"
   },
   "dependencies": {
+    "@elysiajs/eden": "^1.4.8",
     "@scholar-seek/env": "workspace:*",
+    "@scholar-seek/server": "workspace:*",
     "@scholar-seek/ui": "workspace:*",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/react-query": "^5.80.6",

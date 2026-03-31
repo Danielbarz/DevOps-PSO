@@ -35,6 +35,8 @@ export const papers = pgTable(
 		index("papers_published_at_idx").on(table.published_at),
 		index("papers_source_idx").on(table.source),
 		index("papers_embedding_stored_idx").on(table.embedding_stored),
+		index("papers_authors_gin_idx").using("gin", table.authors),
+		index("papers_keywords_gin_idx").using("gin", table.keywords),
 	]
 );
 

@@ -1,4 +1,4 @@
-import { env } from "@scholar-seek/env/server";
+import { env } from "@scholar-seek/env/db";
 import { drizzle } from "drizzle-orm/node-postgres";
 
 // Schema import

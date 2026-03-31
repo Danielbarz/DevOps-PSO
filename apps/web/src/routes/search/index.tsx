@@ -8,12 +8,13 @@ import { z } from "zod";
 import { SearchBar } from "../../components/search/search-bar";
 import { SearchResults } from "../../components/search/search-results";
 import { saveSearchState } from "../../lib/search-state";
+import { normalizeToArray } from "../../lib/utils";
 import type { SortBy } from "../../types/paper";
 
 const searchSchema = z.object({
 	q: z.string().optional(),
 	page: z.coerce.number().optional().default(1),
-	pageSize: z.coerce.number().optional().default(10),
+	pageSize: z.coerce.number().optional().default(20),
 	author: z.string().optional(),
 	journal: z.union([z.string(), z.array(z.string())]).optional(),
 	keyword: z.union([z.string(), z.array(z.string())]).optional(),
@@ -35,7 +36,7 @@ function SearchPage() {
 	const {
 		q = "",
 		page = 1,
-		pageSize = 10,
+		pageSize = 20,
 		author,
 		journal,
 		keyword,
@@ -75,15 +76,6 @@ function SearchPage() {
 			to: "/search",
 			search: { ...search, page: 1, pageSize: newSize },
 		});
-	};
-
-	const normalizeToArray = (
-		value: string | string[] | undefined
-	): string[] | undefined => {
-		if (!value) {
-			return undefined;
-		}
-		return Array.isArray(value) ? value : [value];
 	};
 
 	const initialFilters = {

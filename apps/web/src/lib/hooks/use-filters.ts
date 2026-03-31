@@ -1,38 +1,31 @@
 import { useRouter } from "@tanstack/react-router";
 import { useCallback, useMemo } from "react";
 import type { SortBy } from "../../types/paper";
-
-const YEAR_MIN = 2000;
-const YEAR_MAX = new Date().getFullYear();
-
-function parseStringArray(value: unknown): string[] {
-	if (!value) {
-		return [];
-	}
-	if (Array.isArray(value)) {
-		return value as string[];
-	}
-	return [value as string];
-}
+import { YEAR_MAX, YEAR_MIN } from "../constants";
+import { normalizeToArray } from "../utils";
 
 export function useFilters<T extends Record<string, unknown>>(search: T) {
 	const router = useRouter();
 
 	const authorFilter = (search.author as string) ?? "";
 	const journalFilter = useMemo(
-		() => parseStringArray(search.journal),
+		() =>
+			normalizeToArray(search.journal as string | string[] | undefined) ?? [],
 		[search.journal]
 	);
 	const keywordFilter = useMemo(
-		() => parseStringArray(search.keyword),
+		() =>
+			normalizeToArray(search.keyword as string | string[] | undefined) ?? [],
 		[search.keyword]
 	);
-	const yearFrom = search.yearFrom
-		? Number.parseInt(String(search.yearFrom), 10)
-		: YEAR_MIN;
-	const yearTo = search.yearTo
-		? Number.parseInt(String(search.yearTo), 10)
-		: YEAR_MAX;
+	const yearFrom =
+		search.yearFrom === undefined
+			? YEAR_MIN
+			: Number.parseInt(String(search.yearFrom), 10);
+	const yearTo =
+		search.yearTo === undefined
+			? YEAR_MAX
+			: Number.parseInt(String(search.yearTo), 10);
 	const sortBy = ((search.sortBy as SortBy) ?? "relevance") as SortBy;
 
 	const activeFilterCount = [
@@ -84,7 +77,7 @@ export function useFilters<T extends Record<string, unknown>>(search: T) {
 	);
 
 	const clearAllFilters = useCallback(() => {
-		const newSearch = { q: search.q, page: 1 };
+		const newSearch = { q: search.q as string | undefined, page: 1 };
 		router.navigate({ to: window.location.pathname, search: newSearch });
 	}, [router, search]);
 

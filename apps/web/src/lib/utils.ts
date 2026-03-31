@@ -1,3 +1,12 @@
+export function normalizeToArray(
+	value: string | string[] | undefined
+): string[] | undefined {
+	if (!value) {
+		return undefined;
+	}
+	return Array.isArray(value) ? value : [value];
+}
+
 export function formatDate(dateString: string) {
 	try {
 		const date = new Date(dateString);

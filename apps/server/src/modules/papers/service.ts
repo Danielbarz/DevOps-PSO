@@ -1,0 +1,266 @@
+import { db } from "@scholar-seek/db";
+import type { Paper } from "@scholar-seek/db/schema/papers";
+import { papers } from "@scholar-seek/db/schema/papers";
+import {
+	and,
+	asc,
+	count,
+	desc,
+	eq,
+	gte,
+	ilike,
+	inArray,
+	lte,
+	or,
+	type SQL,
+	sql,
+} from "drizzle-orm";
+import { status } from "elysia";
+import type {
+	FacetItemType,
+	FacetsType,
+	PaperResponseType,
+	SearchResultType,
+	SortByType,
+} from "./model";
+
+type FacetRow = Pick<
+	Paper,
+	"authors" | "keywords" | "journal" | "published_at"
+>;
+
+function toPaperResponse(paper: Paper): PaperResponseType {
+	return {
+		id: paper.id,
+		title: paper.title,
+		abstract: paper.abstract,
+		authors: paper.authors,
+		publishedAt: paper.published_at?.toISOString() ?? null,
+		journal: paper.journal,
+		doi: paper.doi,
+		keywords: paper.keywords,
+		sourceUrl: paper.source_url,
+	};
+}
+
+function parseArrayParam(
+	param: string | string[] | undefined
+): string[] | undefined {
+	if (!param) {
+		return undefined;
+	}
+	if (Array.isArray(param)) {
+		return param;
+	}
+	return [param];
+}
+
+function buildFacets(papersList: FacetRow[]): FacetsType {
+	const journalCounts = new Map<string, number>();
+	const keywordCounts = new Map<string, number>();
+	const authorCounts = new Map<string, number>();
+	const yearCounts = new Map<string, number>();
+
+	for (const paper of papersList) {
+		if (paper.journal) {
+			journalCounts.set(
+				paper.journal,
+				(journalCounts.get(paper.journal) ?? 0) + 1
+			);
+		}
+
+		if (paper.keywords) {
+			for (const keyword of paper.keywords) {
+				keywordCounts.set(keyword, (keywordCounts.get(keyword) ?? 0) + 1);
+			}
+		}
+
+		for (const author of paper.authors) {
+			authorCounts.set(author, (authorCounts.get(author) ?? 0) + 1);
+		}
+
+		if (paper.published_at) {
+			const year = paper.published_at.getFullYear().toString();
+			yearCounts.set(year, (yearCounts.get(year) ?? 0) + 1);
+		}
+	}
+
+	const toFacetItems = (map: Map<string, number>): FacetItemType[] =>
+		Array.from(map.entries())
+			.map(([value, count]) => ({ value, count }))
+			.sort((a, b) => b.count - a.count);
+
+	return {
+		journals: toFacetItems(journalCounts),
+		keywords: toFacetItems(keywordCounts),
+		authors: toFacetItems(authorCounts),
+		years: toFacetItems(yearCounts),
+	};
+}
+
+function buildOrderBy(sortBy: SortByType) {
+	switch (sortBy) {
+		case "date_desc":
+			return desc(papers.published_at);
+		case "date_asc":
+			return asc(papers.published_at);
+		case "title_asc":
+			return asc(papers.title);
+		case "author_asc":
+			return sql`${papers.authors}->>0 asc`;
+		default:
+			return undefined;
+	}
+}
+
+export async function searchPapers(params: {
+	q?: string;
+	page?: number;
+	pageSize?: number;
+	sortBy?: SortByType;
+	author?: string;
+	journal?: string | string[];
+	keyword?: string | string[];
+	yearFrom?: number;
+	yearTo?: number;
+}): Promise<SearchResultType> {
+	const page = Math.max(1, params.page ?? 1);
+	const pageSize = [10, 20, 50].includes(params.pageSize ?? 20)
+		? (params.pageSize ?? 20)
+		: 20;
+	const sortBy: SortByType = params.sortBy ?? "relevance";
+
+	const conditions: (SQL | undefined)[] = [];
+
+	if (params.q) {
+		const searchPattern = `%${params.q.toLowerCase()}%`;
+		conditions.push(
+			or(
+				ilike(papers.title, searchPattern),
+				ilike(papers.abstract, searchPattern),
+				sql`${papers.authors}::text ilike ${searchPattern}`,
+				sql`${papers.keywords}::text ilike ${searchPattern}`,
+				ilike(papers.journal, searchPattern)
+			)
+		);
+	}
+
+	if (params.author) {
+		conditions.push(
+			sql`${papers.authors}::text ilike ${`%"${params.author}%"`}`
+		);
+	}
+
+	const journals = parseArrayParam(params.journal);
+	if (journals && journals.length > 0) {
+		conditions.push(inArray(papers.journal, journals));
+	}
+
+	const keywords = parseArrayParam(params.keyword);
+	if (keywords && keywords.length > 0) {
+		conditions.push(
+			sql`${papers.keywords}::jsonb ?| ${JSON.stringify(keywords)}`
+		);
+	}
+
+	if (params.yearFrom !== undefined) {
+		conditions.push(
+			gte(papers.published_at, new Date(`${params.yearFrom}-01-01`))
+		);
+	}
+
+	if (params.yearTo !== undefined) {
+		conditions.push(
+			lte(papers.published_at, new Date(`${params.yearTo}-12-31`))
+		);
+	}
+
+	const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+	const offset = (page - 1) * pageSize;
+	const orderBy = buildOrderBy(sortBy);
+
+	const [paginatedRows, countResult, facetRows] = await Promise.all([
+		orderBy
+			? db
+					.select()
+					.from(papers)
+					.where(whereClause)
+					.orderBy(orderBy)
+					.limit(pageSize)
+					.offset(offset)
+			: db
+					.select()
+					.from(papers)
+					.where(whereClause)
+					.limit(pageSize)
+					.offset(offset),
+		db.select({ count: count() }).from(papers).where(whereClause),
+		db
+			.select({
+				authors: papers.authors,
+				keywords: papers.keywords,
+				journal: papers.journal,
+				published_at: papers.published_at,
+			})
+			.from(papers)
+			.where(whereClause),
+	]);
+
+	const total = Number(countResult[0]?.count ?? 0);
+	const facets = buildFacets(facetRows);
+
+	return {
+		papers: paginatedRows.map(toPaperResponse),
+		total,
+		page,
+		pageSize,
+		facets,
+	};
+}
+
+export async function getPaper(id: string): Promise<PaperResponseType> {
+	const [paper] = await db.select().from(papers).where(eq(papers.id, id));
+
+	if (!paper) {
+		throw status(404, "Paper not found");
+	}
+
+	return toPaperResponse(paper);
+}
+
+export async function getRelatedPapers(
+	id: string,
+	limit = 5
+): Promise<PaperResponseType[]> {
+	const [sourcePaper] = await db.select().from(papers).where(eq(papers.id, id));
+
+	if (!sourcePaper?.keywords?.length) {
+		return [];
+	}
+
+	const keywords = sourcePaper.keywords;
+
+	const relatedPapers = await db
+		.select()
+		.from(papers)
+		.where(
+			and(
+				sql`${papers.id} != ${id}`,
+				sql`${papers.keywords}::jsonb ?| ${keywords}`
+			)
+		)
+		.limit(limit);
+
+	return relatedPapers.map(toPaperResponse);
+}
+
+export async function getJournals(): Promise<string[]> {
+	const result = await db
+		.selectDistinct({ journal: papers.journal })
+		.from(papers)
+		.where(sql`${papers.journal} IS NOT NULL`)
+		.orderBy(asc(papers.journal));
+
+	return result.map((r) => r.journal).filter((j): j is string => j !== null);
+}

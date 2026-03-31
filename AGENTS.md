@@ -34,9 +34,11 @@ packages/
 ## Code Conventions
 
 ### Imports
+
 - External imports first, then workspace (`@scholar-seek/*`), then relative
 - Use `verbatimModuleSyntax` - type imports must use `import type { X }`
 - Example:
+
 ```ts
 import { Elysia } from "elysia";
 import { env } from "@scholar-seek/env/server";
@@ -47,28 +49,33 @@ import Header from "./components/header";
 ```
 
 ### Formatting
+
 - Tab indentation (enforced by Biome)
 - Double quotes for strings
 - Import organization handled automatically by Biome
 
 ### TypeScript
+
 - Strict mode with `noUncheckedIndexedAccess`
 - No unused locals/parameters
 - Prefer `as const` for literal types
 - Use `unknown` over `any`
 
 ### Naming Conventions
+
 - React components: PascalCase files (`Button.tsx`) and names (`Button`)
 - Route files: TanStack conventions (`__root.tsx`, `index.tsx`, `[id].tsx`)
 - Constants: `UPPER_SNAKE_CASE`
 - Functions: camelCase
 
 ### Exports
+
 - Page/route components: default export (`export default function HomePage()`)
 - Shared components: named export (`export function Button()`)
 - Use `export const Route = createFileRoute(...)` for route definitions
 
 ### React Components
+
 - Function components only
 - Default props via destructuring with defaults
 - Use `data-slot` attribute for styling identification
@@ -76,21 +83,25 @@ import Header from "./components/header";
 ## Framework Patterns
 
 ### TanStack Router
+
 - Routes in `apps/web/src/routes/`
 - `__root.tsx` for root layout
 - File-based routing with `[param]` for dynamic segments
 
 ### ElysiaJS Backend
+
 - Single entry point in `apps/server/src/index.ts`
 - Use `.use()` for plugins and middleware
 - Import env from `@scholar-seek/env/server`
 
 ### Drizzle Schema
+
 - Define schemas in `packages/db/src/schema/`
 - Export from `packages/db/src/index.ts`
 - Use `db` exported instance for queries
 
 ### UI Components
+
 - Shared primitives in `packages/ui/src/components/`
 - Add components: `npx shadcn@latest add accordion -c packages/ui`
 - Import: `import { Button } from "@scholar-seek/ui/components/button"`

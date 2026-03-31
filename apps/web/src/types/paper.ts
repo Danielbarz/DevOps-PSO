@@ -1,10 +1,10 @@
 export interface Paper {
-	abstract?: string;
+	abstract: string | null;
 	authors: string[];
-	doi?: string;
+	doi: string | null;
 	id: string;
-	journal: string;
-	keywords?: string[];
+	journal: string | null;
+	keywords: string[] | null;
 	publishedAt: string;
 	sourceUrl: string;
 	title: string;
