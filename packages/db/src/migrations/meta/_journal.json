@@ -15,6 +15,13 @@
       "when": 1775191399525,
       "tag": "0001_aberrant_vin_gonzales",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1775193915736,
+      "tag": "0002_broken_psynapse",
+      "breakpoints": true
     }
   ]
 }

@@ -16,6 +16,7 @@ import {
 	sql,
 } from "drizzle-orm";
 import { status } from "elysia";
+import { cacheGet, cacheSet } from "../../lib/cache";
 import type {
 	FacetItemType,
 	FacetsType,
@@ -113,6 +114,10 @@ function buildOrderBy(sortBy: SortByType) {
 	}
 }
 
+function searchCacheKey(params: object): string {
+	return `papers:search:${JSON.stringify(params)}`;
+}
+
 export async function searchPapers(params: {
 	q?: string;
 	page?: number;
@@ -124,6 +129,11 @@ export async function searchPapers(params: {
 	yearFrom?: number;
 	yearTo?: number;
 }): Promise<SearchResultType> {
+	const cacheKey = searchCacheKey(params);
+	const cached = await cacheGet<SearchResultType>(cacheKey);
+	if (cached) {
+		return cached;
+	}
 	const page = Math.max(1, params.page ?? 1);
 	const pageSize = [10, 20, 50].includes(params.pageSize ?? 20)
 		? (params.pageSize ?? 20)
@@ -210,23 +220,34 @@ export async function searchPapers(params: {
 	const total = Number(countResult[0]?.count ?? 0);
 	const facets = buildFacets(facetRows);
 
-	return {
+	const result: SearchResultType = {
 		papers: paginatedRows.map(toPaperResponse),
 		total,
 		page,
 		pageSize,
 		facets,
 	};
+
+	await cacheSet(searchCacheKey(params), result, 300);
+	return result;
 }
 
 export async function getPaper(id: string): Promise<PaperResponseType> {
+	const cacheKey = `papers:id:${id}`;
+	const cached = await cacheGet<PaperResponseType>(cacheKey);
+	if (cached) {
+		return cached;
+	}
+
 	const [paper] = await db.select().from(papers).where(eq(papers.id, id));
 
 	if (!paper) {
 		throw status(404, "Paper not found");
 	}
 
-	return toPaperResponse(paper);
+	const result = toPaperResponse(paper);
+	await cacheSet(cacheKey, result, 1800);
+	return result;
 }
 
 export async function getRelatedPapers(
@@ -256,11 +277,22 @@ export async function getRelatedPapers(
 }
 
 export async function getJournals(): Promise<string[]> {
+	const cacheKey = "journals:all";
+	const cached = await cacheGet<string[]>(cacheKey);
+	if (cached) {
+		return cached;
+	}
+
 	const result = await db
 		.selectDistinct({ journal: papers.journal })
 		.from(papers)
 		.where(sql`${papers.journal} IS NOT NULL`)
 		.orderBy(asc(papers.journal));
 
-	return result.map((r) => r.journal).filter((j): j is string => j !== null);
+	const journals = result
+		.map((r) => r.journal)
+		.filter((j): j is string => j !== null);
+
+	await cacheSet(cacheKey, journals, 3600);
+	return journals;
 }

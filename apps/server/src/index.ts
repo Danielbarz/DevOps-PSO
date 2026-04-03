@@ -1,6 +1,8 @@
 import { cors } from "@elysiajs/cors";
 import { env } from "@scholar-seek/env/server";
 import { Elysia } from "elysia";
+import { crawlerModule } from "./modules/crawler";
+import { startCrawlWorker } from "./modules/crawler/queue";
 import { papersModule } from "./modules/papers";
 
 const app = new Elysia()
@@ -23,6 +25,7 @@ const app = new Elysia()
 		})
 	)
 	.use(papersModule)
+	.use(crawlerModule)
 	.get("/", () => "OK", {
 		detail: {
 			summary: "Health check",
@@ -34,6 +37,7 @@ app.listen(3000, () => {
 	console.log(
 		`🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`
 	);
+	startCrawlWorker();
 });
 
 export type App = typeof app;

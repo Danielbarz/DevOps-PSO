@@ -6,6 +6,7 @@ import {
 	pgTable,
 	text,
 	timestamp,
+	uniqueIndex,
 	uuid,
 	varchar,
 } from "drizzle-orm/pg-core";
@@ -37,6 +38,10 @@ export const papers = pgTable(
 		index("papers_embedding_stored_idx").on(table.embedding_stored),
 		index("papers_authors_gin_idx").using("gin", table.authors),
 		index("papers_keywords_gin_idx").using("gin", table.keywords),
+		uniqueIndex("papers_source_source_id_idx").on(
+			table.source,
+			table.source_id
+		),
 	]
 );
 
