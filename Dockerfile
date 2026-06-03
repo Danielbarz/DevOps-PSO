@@ -1,11 +1,11 @@
 # Stage 1: Base Image dengan Bun
-FROM oven/bun:1.1 AS base
+FROM oven/bun:1.3.8 AS base
 WORKDIR /app
 
 # Stage 2: Install Dependencies
 FROM base AS dependencies
 # Salin file konfigurasi monorepo
-COPY package.json bun.lockb turbo.json ./
+COPY package.json bun.lock turbo.json ./
 # Salin package.json dari setiap workspace aplikasi dan package
 COPY apps/web/package.json ./apps/web/
 COPY apps/server/package.json ./apps/server/
@@ -25,7 +25,7 @@ ENV NODE_ENV=production
 RUN bun run build
 
 # Stage 4: Production Runner
-FROM oven/bun:1.1-slim AS runner
+FROM oven/bun:1.3.8-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
