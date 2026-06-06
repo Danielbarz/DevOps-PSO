@@ -1,8 +1,8 @@
-import { cors } from "@elysiajs/cors";
+import { fileURLToPath } from "node:url";
 import { staticPlugin } from "@elysia/static";
+import { cors } from "@elysiajs/cors";
 import { env } from "@scholar-seek/env/server";
 import { Elysia } from "elysia";
-import { fileURLToPath } from "node:url";
 import { crawlerModule } from "./modules/crawler";
 import {
 	cleanupStuckJobs,
@@ -24,56 +24,31 @@ const app = new Elysia()
 			set.status = 400;
 			return { error: error.message };
 		}
-		if (code === "NOT_FOUND") {
-			set.status = 404;
-			return { error: "Not found" };
-		}
-		set.status = 500;
-		return { error: "Internal server error" };
-	})
-	.use(
-		staticPlugin({
-			assets: frontendAssetsPath,
-			prefix: "/",
-		})
-	)
-	.use(
-		cors({
-			origin: env.CORS_ORIGIN,
-			methods: ["GET", "POST", "OPTIONS"],
-		})
-	)
-	.use(papersModule)
-	.use(crawlerModule)
-	.get("/health", () => "OK", {
-		detail: {
-			summary: "Health check",
-			tags: ["health"],
-		},
-	})
-	.get("/*", ({ path }) => {
-		if (path.startsWith("/api")) {
-			return new Response("Not found", { status: 404 });
-		}
 
+		console.error(error);
+		set.status = 500;
+		return { error: "Internal Server Error" };
+	})
+	.use(cors())
+	.use(staticPlugin({ assets: frontendAssetsPath, prefix: "/" }))
+	.use(crawlerModule)
+	.use(papersModule)
+	.get("/*", () => {
 		return Bun.file(frontendIndexPath);
 	});
 
-app.listen(3000, () => {
-	console.log(
-		`🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`
-	);
-	cleanupStuckJobs().then(() => startCrawlWorker());
-});
+const server = app.listen(env.PORT);
 
-async function shutdown() {
-	console.log("[server] shutting down...");
+console.log(
+	`🚀 Server running at http://${server.hostname}:${server.port}`
+);
+
+startCrawlWorker();
+
+process.on("SIGINT", async () => {
+	console.log("Shutting down gracefully...");
 	await stopCrawlWorker();
-	app.stop();
+	await cleanupStuckJobs();
+	await app.stop();
 	process.exit(0);
-}
-
-process.on("SIGTERM", shutdown);
-process.on("SIGINT", shutdown);
-
-export type App = typeof app;
+});
