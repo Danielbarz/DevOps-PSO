@@ -1,4 +1,4 @@
-import { fileURLToPath } from "node:url";
+import path from "node:path";
 import { staticPlugin } from "@elysia/static";
 import { cors } from "@elysiajs/cors";
 import { env } from "@scholar-seek/env/server";
@@ -11,11 +11,13 @@ import {
 } from "./modules/crawler/queue";
 import { papersModule } from "./modules/papers";
 
-const frontendAssetsPath = fileURLToPath(
-	new URL("../../web/dist/client/", import.meta.url)
+const frontendAssetsPath = path.resolve(
+	process.cwd(),
+	"apps/web/dist/client"
 );
-const frontendIndexPath = fileURLToPath(
-	new URL("../../web/dist/client/index.html", import.meta.url)
+const frontendIndexPath = path.resolve(
+	process.cwd(),
+	"apps/web/dist/client/index.html"
 );
 
 const app = new Elysia()
@@ -38,9 +40,7 @@ const app = new Elysia()
 
 const PORT = Number(process.env.PORT) || 3000;
 const server = app.listen(PORT);
-
-console.log(`🚀 Server running at http://${server.hostname}:${server.port}`);
-
+console.log(`Server running at http://${server.hostname}:${server.port}`);
 startCrawlWorker();
 
 process.on("SIGINT", async () => {
