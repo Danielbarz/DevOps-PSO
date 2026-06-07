@@ -8,12 +8,11 @@ export function getRedis(): Redis {
 		client = new Redis(env.REDIS_URL, {
 			maxRetriesPerRequest: null,
 			lazyConnect: false,
+			tls: {},
 		});
-
 		client.on("error", (err) => {
 			console.error("[redis] connection error:", err.message);
 		});
 	}
-
 	return client;
 }
