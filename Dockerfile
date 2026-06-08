@@ -16,6 +16,9 @@ COPY . .
 ENV NODE_ENV=production
 ENV SKIP_ENV_VALIDATION=1
 RUN bun run build
+RUN ls -la apps/web/
+RUN ls -la apps/web/dist/ || echo "no dist folder"
+RUN ls -la apps/web/.output/ || echo "no .output folder"
 
 # Stage 3: Runner
 FROM oven/bun:1.3.8-slim AS runner
