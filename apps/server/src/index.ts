@@ -12,12 +12,12 @@ import {
 import { papersModule } from "./modules/papers";
 
 const frontendAssetsPath = path.resolve(
-	process.cwd(),
-	"apps/web/dist/client"
+	import.meta.dir,
+	"../../apps/web/dist/client"
 );
 const frontendIndexPath = path.resolve(
-	process.cwd(),
-	"apps/web/dist/client/index.html"
+	import.meta.dir,
+	"../../apps/web/dist/client/index.html"
 );
 
 const app = new Elysia()
@@ -42,7 +42,6 @@ const PORT = Number(process.env.PORT) || 3000;
 const server = app.listen(PORT);
 console.log(`Server running at http://${server.hostname}:${server.port}`);
 startCrawlWorker();
-
 process.on("SIGINT", async () => {
 	console.log("Shutting down gracefully...");
 	await stopCrawlWorker();
