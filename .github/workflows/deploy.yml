@@ -1,0 +1,56 @@
+name: Production Deployment Pipeline
+
+on:
+  push:
+    branches:
+      - main # Pipeline hanya aktif saat ada push/merge ke branch main
+
+jobs:
+  deploy:
+    name: Provision & Deploy to Azure Infrastructure
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Execute Remote SSH Commands
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.AZURE_VM_IP }}
+          username: ${{ secrets.AZURE_VM_USERNAME }}
+          key: ${{ secrets.AZURE_SSH_KEY }}
+          script: |
+            # 1. Inisialisasi Environment (Bun Runtime)
+            export BUN_INSTALL="$HOME/.bun"
+            export PATH="$BUN_INSTALL/bin:$PATH"
+            
+            # Navigasi ke direktori kerja aplikasi
+            cd /home/${{ secrets.AZURE_VM_USERNAME }}/DevOps-PSO
+            
+            # 2. Sinkronisasi Version Control
+            echo "Menarik pembaruan kode terbaru dari repositori..."
+            git pull origin main
+            
+            # 3. Resolusi Dependensi
+            echo "Menginstal paket dependensi Turborepo & Bun..."
+            bun install
+            
+            # 4. Provisi Infrastruktur Database
+            echo "Memastikan kontainer PostgreSQL dan Redis beroperasi..."
+            bun run db:start
+            sleep 10 # Jeda mitigasi untuk memastikan database siap menerima koneksi
+            
+            # Menerapkan migrasi skema database (Drizzle)
+            bun run db:push
+            
+            # 5. Eksekusi Build Monorepo
+            echo "Mem-build aplikasi Web dan Server API..."
+            bun run build
+            
+            # 6. Protokol Restart Layanan (Zero Downtime Approximation)
+            echo "Menghentikan instans lama dan menjalankan versi terbaru..."
+            pkill -f "bun run dev" || true
+            
+            # Menjalankan layanan di background agar sesi SSH bisa ditutup
+            nohup bun run dev:server > api_server.log 2>&1 &
+            nohup bun run dev:web > web_client.log 2>&1 &
+            
+            echo "Deployment Tereksekusi dengan Sukses."
