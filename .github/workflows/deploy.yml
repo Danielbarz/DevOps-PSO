@@ -19,55 +19,39 @@ jobs:
           key: ${{ secrets.AZURE_SSH_KEY }}
           script: |
             echo "=== FASE 1: AUDIT & PROVISI RUNTIME ==="
-            # Memastikan Bun terinstal. Jika tidak, sistem akan menginstalnya.
             if [ ! -d "$HOME/.bun" ]; then
-              echo "Bun runtime tidak ditemukan. Menginisiasi instalasi..."
+              echo "Menginisiasi instalasi Bun runtime..."
               curl -fsSL https://bun.sh/install | bash
             fi
             
-            # Memuat Bun ke dalam sistem environment
             export BUN_INSTALL="$HOME/.bun"
             export PATH="$BUN_INSTALL/bin:$PATH"
             
             echo "=== FASE 2: SINKRONISASI KODE SUMBER ==="
-            # Mendefinisikan target direktori
             PROJECT_DIR="/home/${{ secrets.AZURE_VM_USERNAME }}/DevOps-PSO"
             
-            # Memastikan repositori ada. Jika tidak, lakukan clone otomatis dari akun rafindita.
             if [ ! -d "$PROJECT_DIR" ]; then
-              echo "Direktori proyek tidak ditemukan. Melakukan kloning repositori..."
+              echo "Melakukan kloning repositori..."
               git clone https://github.com/rafindita/DevOps-PSO.git $PROJECT_DIR
             fi
             
-            # Masuk ke dalam direktori proyek
             cd $PROJECT_DIR
-            
-            # Mengamankan perizinan direktori untuk mencegah konflik git
             git config --global --add safe.directory $PROJECT_DIR
-            
-            echo "Menarik pembaruan kode terbaru..."
             git pull origin main
             
             echo "=== FASE 3: RESOLUSI DEPENDENSI & BUILD ==="
-            echo "Menginstal paket dependensi Turborepo & Bun..."
             bun install
             
-            echo "Memastikan PostgreSQL dan Redis beroperasi..."
-            # Menambahkan sudo untuk memastikan Docker memiliki izin penuh
+            echo "Memastikan Docker Database beroperasi..."
             sudo bun run db:start || true
             sleep 10
             
-            echo "Menerapkan migrasi database..."
             bun run db:push
-            
-            echo "Mem-build aplikasi Web dan API..."
             bun run build
             
             echo "=== FASE 4: ORKESTRASI LAYANAN ==="
-            echo "Menghentikan instans layanan lama..."
             pkill -f "bun run dev" || true
             
-            echo "Menjalankan versi terbaru di background..."
             nohup bun run dev:server > api_server.log 2>&1 &
             nohup bun run dev:web > web_client.log 2>&1 &
             
