@@ -19,19 +19,14 @@ jobs:
           key: ${{ secrets.AZURE_SSH_KEY }}
           script: |
             echo "=== FASE 1: AUDIT & PROVISI INFRASTRUKTUR ==="
-            
-            # Memastikan paket sistem dasar terinstal (unzip diperlukan oleh Bun)
-            echo "Menginstal dependensi sistem operasi..."
             sudo apt-get update -y
             sudo apt-get install -y unzip curl
             
-            # Memastikan Bun terinstal
             if [ ! -d "$HOME/.bun" ]; then
               echo "Menginisiasi instalasi Bun runtime..."
               curl -fsSL https://bun.sh/install | bash
             fi
             
-            # Memuat Bun ke environment variables
             export BUN_INSTALL="$HOME/.bun"
             export PATH="$BUN_INSTALL/bin:$PATH"
             
@@ -48,25 +43,23 @@ jobs:
             git pull origin main
             
             echo "=== FASE 3: RESOLUSI DEPENDENSI & BUILD ==="
-            echo "Menginstal paket Turborepo & Bun..."
             bun install
             
-            echo "Memastikan Docker Database beroperasi..."
             sudo bun run db:start || true
             sleep 10
             
-            echo "Menerapkan migrasi database..."
             bun run db:push
-            
-            echo "Mem-build aplikasi Web dan API..."
             bun run build
             
             echo "=== FASE 4: ORKESTRASI LAYANAN ==="
             echo "Menghentikan instans layanan lama..."
-            pkill -f "bun run dev" || true
+            # Membidik proses spesifik agar tidak salah mematikan proses lain
+            pkill -f "dev:server" || true
+            pkill -f "dev:web" || true
             
             echo "Menjalankan versi terbaru di background..."
-            nohup bun run dev:server > api_server.log 2>&1 &
-            nohup bun run dev:web > web_client.log 2>&1 &
+            # Perbaikan Kritis: Menambahkan < /dev/null agar proses benar-benar lepas dari SSH
+            nohup bun run dev:server > api_server.log 2>&1 < /dev/null &
+            nohup bun run dev:web > web_client.log 2>&1 < /dev/null &
             
             echo "Deployment Pipeline Tereksekusi dengan Sukses."
