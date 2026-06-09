@@ -39,8 +39,10 @@ const app = new Elysia()
 	});
 
 const PORT = Number(process.env.PORT) || 3000;
-const server = app.listen(PORT);
-console.log(`Server running at http://${server.hostname}:${server.port}`);
+const server = app.listen({
+    port: PORT,
+    hostname: "0.0.0.0"
+});console.log(`Server running at http://${server.hostname}:${server.port}`);
 startCrawlWorker();
 
 process.on("SIGINT", async () => {
