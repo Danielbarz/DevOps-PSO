@@ -1,9 +1,9 @@
-name: Production Deployment Pipeline
+name: Deploy to Azure VM
 
 on:
   push:
     branches:
-      - main # Pipeline hanya aktif saat ada push/merge ke branch main
+      - main # Memicu deployment otomatis setiap ada perubahan di branch main
 
 jobs:
   deploy:
@@ -22,34 +22,32 @@ jobs:
             export BUN_INSTALL="$HOME/.bun"
             export PATH="$BUN_INSTALL/bin:$PATH"
             
-            # Navigasi ke direktori kerja aplikasi
+            # 2. Navigasi ke direktori kerja (Diasumsikan clone manual telah dilakukan)
             cd /home/${{ secrets.AZURE_VM_USERNAME }}/DevOps-PSO
             
-            # 2. Sinkronisasi Version Control
-            echo "Menarik pembaruan kode terbaru dari repositori..."
+            # 3. Sinkronisasi Version Control
+            echo "Menarik pembaruan kode terbaru..."
             git pull origin main
             
-            # 3. Resolusi Dependensi
-            echo "Menginstal paket dependensi Turborepo & Bun..."
+            # 4. Resolusi Dependensi
+            echo "Menginstal paket dependensi..."
             bun install
             
-            # 4. Provisi Infrastruktur Database
-            echo "Memastikan kontainer PostgreSQL dan Redis beroperasi..."
+            # 5. Provisi Infrastruktur Database
+            echo "Memastikan PostgreSQL dan Redis beroperasi..."
             bun run db:start
-            sleep 10 # Jeda mitigasi untuk memastikan database siap menerima koneksi
+            sleep 10
             
-            # Menerapkan migrasi skema database (Drizzle)
+            echo "Menerapkan migrasi database..."
             bun run db:push
             
-            # 5. Eksekusi Build Monorepo
-            echo "Mem-build aplikasi Web dan Server API..."
+            # 6. Eksekusi Build
+            echo "Mem-build aplikasi Web dan API..."
             bun run build
             
-            # 6. Protokol Restart Layanan (Zero Downtime Approximation)
-            echo "Menghentikan instans lama dan menjalankan versi terbaru..."
+            # 7. Restart Layanan
+            echo "Menjalankan layanan di background..."
             pkill -f "bun run dev" || true
-            
-            # Menjalankan layanan di background agar sesi SSH bisa ditutup
             nohup bun run dev:server > api_server.log 2>&1 &
             nohup bun run dev:web > web_client.log 2>&1 &
             
