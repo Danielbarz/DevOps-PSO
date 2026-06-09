@@ -1,7 +1,6 @@
 import path from "node:path";
 import { staticPlugin } from "@elysia/static";
 import { cors } from "@elysiajs/cors";
-import { env } from "@scholar-seek/env/server";
 import { Elysia } from "elysia";
 import { crawlerModule } from "./modules/crawler";
 import {
