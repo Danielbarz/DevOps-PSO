@@ -36,13 +36,17 @@ ENV PORT=3000
 COPY --from=builder /app/apps/server/dist ./apps/server/dist
 COPY --from=builder /app/apps/server/package.json ./apps/server/package.json
 
-# Copy hasil build web (dibutuhkan oleh index.ts milik Elysia untuk disajikan ke user)
+# Copy hasil build web dan package.json-nya
 COPY --from=builder /app/apps/web/dist ./apps/web/dist
+COPY --from=builder /app/apps/web/package.json ./apps/web/package.json
 
-# Copy node_modules
+# 🔥 INI YANG HILANG: Copy root package.json dan SEMUA node_modules
+COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/apps/server/node_modules ./apps/server/node_modules
+COPY --from=builder /app/apps/web/node_modules ./apps/web/node_modules
 
 EXPOSE 3000
 
-# JALANKAN LANGSUNG MENGGUNAKAN BUN (Tanpa start.sh)
+# JALANKAN LANGSUNG MENGGUNAKAN BUN
 CMD ["bun", "run", "apps/server/dist/index.mjs"]
