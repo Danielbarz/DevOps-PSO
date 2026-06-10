@@ -37,7 +37,7 @@ const MOCK_ARXIV_XML = `
 describe("ArXiv Adapter", () => {
 	test("correctly parses ArXiv OAI-PMH XML", async () => {
 		// Mock the global fetch
-		global.fetch = mock(() => Promise.resolve(new Response(MOCK_ARXIV_XML)));
+		global.fetch = mock(() => Promise.resolve(new Response(MOCK_ARXIV_XML))) as any;
 
 		const options = { maxRecords: 1 };
 		const generator = arxivAdapter.crawl(options);
@@ -58,7 +58,7 @@ describe("ArXiv Adapter", () => {
 
 	test("handles empty records", async () => {
 		const EMPTY_XML = "<OAI-PMH><ListRecords></ListRecords></OAI-PMH>";
-		global.fetch = mock(() => Promise.resolve(new Response(EMPTY_XML)));
+		global.fetch = mock(() => Promise.resolve(new Response(EMPTY_XML))) as any;
 
 		const generator = arxivAdapter.crawl({ maxRecords: 1 });
 		const { done } = await generator.next();
@@ -66,7 +66,7 @@ describe("ArXiv Adapter", () => {
 	});
 
 	test("filters by subcategory correctly", async () => {
-		global.fetch = mock(() => Promise.resolve(new Response(MOCK_ARXIV_XML)));
+		global.fetch = mock(() => Promise.resolve(new Response(MOCK_ARXIV_XML))) as any;
 
 		// Request a different subcategory than what's in MOCK_ARXIV_XML
 		const options = { categories: ["math.GT"], maxRecords: 1 };
@@ -90,7 +90,7 @@ describe("ArXiv Adapter", () => {
 				);
 			}
 			return Promise.resolve(new Response(MOCK_ARXIV_XML));
-		});
+		}) as any;
 
 		const generator = arxivAdapter.crawl({ maxRecords: 1 });
 		const { value: batch } = await generator.next();
@@ -107,7 +107,7 @@ describe("ArXiv Adapter", () => {
 				return Promise.reject(new Error("Network failure"));
 			}
 			return Promise.resolve(new Response(MOCK_ARXIV_XML));
-		});
+		}) as any;
 
 		const generator = arxivAdapter.crawl({ maxRecords: 1 });
 		const { value: batch } = await generator.next();

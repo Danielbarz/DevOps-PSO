@@ -36,6 +36,7 @@
     "@tanstack/react-router-devtools": "^1.141.1",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/react": "^16.2.0",
+    "@types/jsdom": "^28.0.3",
     "@types/katex": "^0.16.8",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
