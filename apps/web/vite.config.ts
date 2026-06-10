@@ -5,24 +5,11 @@ import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
-	base: "/", // <--- Tambahkan ini
-	plugins: [
+    plugins: [
         tsconfigPaths(),
         tailwindcss(),
-        tanstackStart({ ssr: false }),
+        // Ganti tanstackStart({ ssr: false }) menjadi mode statis
+        tanstackStart({}),
         viteReact(),
-	],
-	build: {
-        rollupOptions: {
-            output: {
-                // Memastikan semua assets punya path yang jelas
-                assetFileNames: "assets/[name]-[hash][extname]",
-                chunkFileNames: "assets/[name]-[hash].js",
-                entryFileNames: "assets/[name]-[hash].js",
-            },
-        },
-    },
-	server: {
-		port: 3001,
-	},
+    ],
 });
