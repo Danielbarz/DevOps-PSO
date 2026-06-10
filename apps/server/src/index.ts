@@ -39,8 +39,12 @@ app.listen(PORT, () => {
 if (process.env.NODE_ENV === "production") {
     const webServerPath = "apps/web/dist/server/server.js";
     console.log("Menyalakan Frontend TanStack di port 3001...");
-    Bun.spawn(["bun", webServerPath], {
-        env: { ...process.env, PORT: "3001" },
+    Bun.spawn(["bun", "run", webServerPath], {
+        env: {
+            ...process.env,
+            PORT: "3001",
+            NODE_PATH: "/app/node_modules" // <-- Tambahkan ini agar dia tahu lokasi library
+        },
         stdout: "inherit",
         stderr: "inherit"
     });
