@@ -12,10 +12,23 @@ import {
 import { papersModule } from "./modules/papers";
 
 // Menggunakan __dirname agar path selalu relatif terhadap file index.ts
-// Kita naik 2 tingkat dari __dirname (src -> server -> apps) 
+// Kita naik 2 tingkat dari __dirname (src -> server -> apps)
 // kemudian turun ke web/dist
-const frontendAssetsPath = path.join(__dirname, "..", "..", "web", "dist");
-const frontendIndexPath = path.join(__dirname, "..", "..", "web", "dist", "index.html");
+const frontendAssetsPath = path.join(
+	import.meta.dirname,
+	"..",
+	"..",
+	"web",
+	"dist"
+);
+const frontendIndexPath = path.join(
+	import.meta.dirname,
+	"..",
+	"..",
+	"web",
+	"dist",
+	"index.html"
+);
 
 const app = new Elysia()
 	.onError(({ code, error, set }) => {
@@ -32,21 +45,27 @@ const app = new Elysia()
 	.use(staticPlugin({ assets: frontendAssetsPath, prefix: "/" }))
 	.use(crawlerModule)
 	.use(papersModule)
+	.get("/health", () => ({ status: "ok" }))
 	.get("/*", () => {
 		return Bun.file(frontendIndexPath);
 	});
 
-const PORT = Number(process.env.PORT) || 3000;
-app.listen({ port: PORT, hostname: "0.0.0.0" }, (server) => {
-	console.log(`Server running at http://${server?.hostname}:${server?.port}`);
-});
+export type App = typeof app;
+export { app };
 
-startCrawlWorker();
+if (process.env.NODE_ENV !== "test") {
+	const PORT = Number(process.env.PORT) || 3000;
+	app.listen({ port: PORT, hostname: "0.0.0.0" }, (server) => {
+		console.log(`Server running at http://${server?.hostname}:${server?.port}`);
+	});
 
-process.on("SIGINT", async () => {
-	console.log("Shutting down gracefully...");
-	await stopCrawlWorker();
-	await cleanupStuckJobs();
-	await app.stop();
-	process.exit(0);
-});
+	startCrawlWorker();
+
+	process.on("SIGINT", async () => {
+		console.log("Shutting down gracefully...");
+		await stopCrawlWorker();
+		await cleanupStuckJobs();
+		await app.stop();
+		process.exit(0);
+	});
+}

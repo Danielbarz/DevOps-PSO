@@ -15,7 +15,7 @@ export function getRedis(): Redis | null {
 			client.on("error", (err) => {
 				console.error("[redis] connection error:", err.message);
 			});
-		} catch (e) {
+		} catch (_e) {
 			return null;
 		}
 	}

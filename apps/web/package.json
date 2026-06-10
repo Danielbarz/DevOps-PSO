@@ -5,6 +5,7 @@
   "scripts": {
     "build": "vite build",
     "check-types": "tsc --noEmit",
+    "test": "bun test",
     "serve": "vite preview",
     "dev": "vite dev"
   },
