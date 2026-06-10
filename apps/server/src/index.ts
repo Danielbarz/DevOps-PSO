@@ -13,8 +13,8 @@ import { papersModule } from "./modules/papers";
 
 const frontendAssetsPath = path.resolve(
 	process.env.NODE_ENV === "production"
-		? path.join(process.cwd(), "apps/web/dist/client")
-		: path.join(import.meta.dir, "../../apps/web/dist/client")
+		? path.join(process.cwd(), "apps/web/dist") // <-- Hapus /client di sini
+		: path.join(import.meta.dir, "../../apps/web/dist") // <-- Hapus /client di sini
 );
 const frontendIndexPath = path.resolve(frontendAssetsPath, "index.html");
 
