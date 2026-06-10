@@ -26,8 +26,12 @@ let queue: Queue<CrawlJobData> | null = null;
 
 export function getCrawlQueue(): Queue<CrawlJobData> {
 	if (!queue) {
+		const redis = getRedis();
+		if (!redis) {
+			throw new Error("Redis connection is required for the crawl queue");
+		}
 		queue = new Queue<CrawlJobData>(QUEUE_NAME, {
-			connection: getRedis(),
+			connection: redis,
 			defaultJobOptions: {
 				attempts: 2,
 				backoff: { type: "exponential", delay: 5000 },
@@ -36,7 +40,7 @@ export function getCrawlQueue(): Queue<CrawlJobData> {
 			},
 		});
 	}
-	return queue;
+	return queue!;
 }
 
 async function processJob(
@@ -199,6 +203,14 @@ export function startCrawlWorker(): void {
 		return;
 	}
 
+	const redis = getRedis();
+	if (!redis) {
+		console.error(
+			"[crawler] could not start worker: redis connection not available"
+		);
+		return;
+	}
+
 	worker = new Worker<CrawlJobData>(
 		QUEUE_NAME,
 		async (job) => {
@@ -216,7 +228,7 @@ export function startCrawlWorker(): void {
 			console.log(`[crawler] completed job ${job.id}`);
 		},
 		{
-			connection: getRedis(),
+			connection: redis,
 			concurrency: 1,
 		}
 	);
