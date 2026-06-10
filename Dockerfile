@@ -14,15 +14,16 @@ COPY packages/env/package.json ./packages/env/
 COPY packages/config/package.json ./packages/config/
 
 RUN bun install --frozen-lockfile
+
+# Copy semua file source code
 COPY . .
-RUN bun install
 
 # Stage 2: Builder
 FROM dependencies AS builder
 WORKDIR /app
-COPY . .
 ENV NODE_ENV=production
 ENV SKIP_ENV_VALIDATION=1
+# Ini akan membuat folder dist/ di server dan web
 RUN bun run build
 
 # Stage 3: Runner
@@ -31,19 +32,17 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 
-# Copy built server
+# Copy hasil build server
 COPY --from=builder /app/apps/server/dist ./apps/server/dist
 COPY --from=builder /app/apps/server/package.json ./apps/server/package.json
 
-# Copy built web (static assets)
+# Copy hasil build web (dibutuhkan oleh index.ts milik Elysia untuk disajikan ke user)
 COPY --from=builder /app/apps/web/dist ./apps/web/dist
 
-# Copy necessary node_modules (monorepo root)
+# Copy node_modules
 COPY --from=builder /app/node_modules ./node_modules
 
 EXPOSE 3000
 
-# Start from the root to maintain path consistency
+# JALANKAN LANGSUNG MENGGUNAKAN BUN (Tanpa start.sh)
 CMD ["bun", "run", "apps/server/dist/index.mjs"]
-
-CMD ["sh", "start.sh"]
