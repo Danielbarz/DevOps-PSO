@@ -1,18 +1,34 @@
 import { describe, expect, mock, test } from "bun:test";
 
 // Mock BullMQ
+const queueAdd = mock(() => Promise.resolve({ id: "job-1" }));
+const queueRemoveRepeatable = mock(() => Promise.resolve());
+let failedHandler:
+	| ((job: { id?: string } | null | undefined, err: Error) => void)
+	| undefined;
+let workerHandler:
+	| ((job: { id?: string; data?: any }) => Promise<void>)
+	| undefined;
+
 mock.module("bullmq", () => {
 	return {
 		Queue: class MockQueue {
 			add() {
-				return Promise.resolve({ id: "job-1" });
+				return queueAdd();
 			}
 			removeRepeatable() {
-				return Promise.resolve();
+				return queueRemoveRepeatable();
 			}
 		},
 		Worker: class MockWorker {
-			on() {
+			constructor(_name: string, handler: (job: any) => Promise<void>) {
+				workerHandler = handler;
+			}
+
+			on(event: string, handler: (job: any, err: Error) => void) {
+				if (event === "failed") {
+					failedHandler = handler;
+				}
 				return this;
 			}
 			close() {
@@ -21,6 +37,18 @@ mock.module("bullmq", () => {
 		},
 	};
 });
+
+const getRedis = mock(() => ({ host: "localhost" }) as any);
+
+mock.module("../../lib/redis", () => ({
+	getRedis,
+}));
+
+mock.module("@scholar-seek/env/server", () => ({
+	env: {
+		NODE_ENV: "production",
+	},
+}));
 
 // Mock cache
 mock.module("../../lib/cache", () => ({
@@ -69,6 +97,20 @@ import {
 } from "./queue";
 
 describe("Crawler Queue", () => {
+	test("getCrawlQueue throws when redis is unavailable", () => {
+		getRedis.mockImplementationOnce(() => null);
+
+		expect(() => getCrawlQueue()).toThrow(
+			"Redis connection is required for the crawl queue"
+		);
+	});
+
+	test("startCrawlWorker returns early when redis is unavailable", () => {
+		getRedis.mockImplementationOnce(() => null);
+
+		startCrawlWorker();
+	});
+
 	test("getCrawlQueue returns a queue", () => {
 		const queue = getCrawlQueue();
 		expect(queue).toBeDefined();
@@ -81,13 +123,68 @@ describe("Crawler Queue", () => {
 
 	test("start/stop worker", async () => {
 		startCrawlWorker();
+		await Promise.resolve();
+		if (failedHandler) {
+			failedHandler({ id: "job-1" }, new Error("boom"));
+		}
 		await stopCrawlWorker();
+		await stopCrawlWorker();
+	});
+
+	test("startCrawlWorker handles daily registration failure", async () => {
+		queueRemoveRepeatable.mockImplementationOnce(() =>
+			Promise.reject(new Error("daily job registration failed"))
+		);
+
+		startCrawlWorker();
+		await Promise.resolve();
+		await stopCrawlWorker();
+	});
+
+	test("worker handles auto-scheduled jobs", async () => {
+		const fetchXml =
+			"<OAI-PMH><ListRecords><record><metadata><arxiv><id>2101.00004</id><title>Auto Job Paper</title><authors><author><keyname>Auto</keyname></author></authors></arxiv></metadata></record></ListRecords></OAI-PMH>";
+		global.fetch = mock(() => Promise.resolve(new Response(fetchXml))) as any;
+
+		startCrawlWorker();
+		await Promise.resolve();
+
+		expect(workerHandler).toBeDefined();
+		await workerHandler?.({
+			id: "job-auto",
+			data: {
+				historyId: "__auto__",
+				source: "arxiv",
+				options: { maxRecords: 1 },
+			},
+		});
+
+		await stopCrawlWorker();
+		global.fetch = originalFetch;
 	});
 
 	test("createAutoHistoryRecord creates a record", async () => {
 		const result = await createAutoHistoryRecord("arxiv", {});
 		expect(result.historyId).toBeDefined();
 		expect(mockDb.insert).toHaveBeenCalled();
+	});
+
+	test("createAutoHistoryRecord throws when no row is returned", async () => {
+		chain.returning.mockImplementationOnce(() => Promise.resolve([]));
+
+		try {
+			await createAutoHistoryRecord("arxiv", {});
+			expect(true).toBe(false);
+		} catch (error: any) {
+			expect(error.message).toContain("Failed to create crawl_history record");
+		}
+	});
+
+	test("createAutoHistoryRecord omits since when no prior crawl exists", async () => {
+		chain.limit.mockImplementationOnce(() => Promise.resolve([]));
+
+		const result = await createAutoHistoryRecord("arxiv", {});
+		expect(result.options.since).toBeUndefined();
 	});
 
 	test("processJob crawls and updates DB successfully", async () => {
@@ -113,6 +210,13 @@ describe("Crawler Queue", () => {
 	});
 
 	test("processJob handles DB insert errors without crashing", async () => {
+		chain.returning.mockImplementationOnce(() =>
+			Promise.resolve([{ id: "1", source: "arxiv" }])
+		);
+		chain.limit.mockImplementationOnce(() =>
+			Promise.resolve([{ started_at: new Date() }])
+		);
+
 		global.fetch = mock(() =>
 			Promise.resolve(
 				new Response(
@@ -132,6 +236,27 @@ describe("Crawler Queue", () => {
 
 		await processJob("h2", "arxiv", { maxRecords: 1 });
 		// Should not throw, should capture error
+		expect(mockDb.update).toHaveBeenCalled();
+
+		global.fetch = originalFetch;
+	});
+
+	test("processJob marks partially inserted batches as skipped", async () => {
+		chain.returning.mockImplementationOnce(() => Promise.resolve([]));
+		chain.from.mockImplementationOnce(() => chain);
+		chain.where.mockImplementationOnce(() =>
+			Promise.resolve([{ started_at: new Date() }])
+		);
+
+		global.fetch = mock(() =>
+			Promise.resolve(
+				new Response(
+					"<OAI-PMH><ListRecords><record><metadata><arxiv><id>2101.00003</id><title>Skipped Paper</title><authors><author><keyname>Skip</keyname></author></authors></arxiv></metadata></record></ListRecords></OAI-PMH>"
+				)
+			)
+		) as any;
+
+		await processJob("h4", "arxiv", { maxRecords: 1 });
 		expect(mockDb.update).toHaveBeenCalled();
 
 		global.fetch = originalFetch;
