@@ -1,7 +1,7 @@
 import { describe, expect, mock, test } from "bun:test";
 
 // Mock DB with full chainable support
-const chain = {
+const chain: any = {
 	from: mock(() => chain),
 	where: mock(() => chain),
 	orderBy: mock(() => chain),
@@ -49,11 +49,13 @@ describe("Papers Service", () => {
 		];
 
 		// 1. Count query
-		chain.then.mockImplementationOnce((resolve) => resolve([{ count: "1" }]));
+		chain.then.mockImplementationOnce((resolve: any) =>
+			resolve([{ count: "1" }])
+		);
 		// 2. Main query
-		chain.then.mockImplementationOnce((resolve) => resolve(mockPapers));
+		chain.then.mockImplementationOnce((resolve: any) => resolve(mockPapers));
 		// 3. Facets query
-		chain.then.mockImplementationOnce((resolve) => resolve(mockPapers));
+		chain.then.mockImplementationOnce((resolve: any) => resolve(mockPapers));
 
 		const result = await searchPapers({ q: "test", author: "A1" });
 
@@ -62,9 +64,11 @@ describe("Papers Service", () => {
 	});
 
 	test("searchPapers handles sorting and pagination", async () => {
-		chain.then.mockImplementationOnce((resolve) => resolve([{ count: "0" }]));
-		chain.then.mockImplementationOnce((resolve) => resolve([]));
-		chain.then.mockImplementationOnce((resolve) => resolve([]));
+		chain.then.mockImplementationOnce((resolve: any) =>
+			resolve([{ count: "0" }])
+		);
+		chain.then.mockImplementationOnce((resolve: any) => resolve([]));
+		chain.then.mockImplementationOnce((resolve: any) => resolve([]));
 
 		await searchPapers({ page: 2, pageSize: 50, sortBy: "date_desc" });
 		expect(chain.limit).toHaveBeenCalledWith(50);
@@ -98,7 +102,7 @@ describe("Papers Service", () => {
 
 		const result = await getRelatedPapers("1");
 		expect(result).toHaveLength(1);
-		expect(result[0].title).toBe("Related");
+		expect(result[0]?.title).toBe("Related");
 	});
 
 	test("getJournals returns list of journals", async () => {

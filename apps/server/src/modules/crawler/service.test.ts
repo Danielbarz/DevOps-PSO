@@ -10,14 +10,17 @@ const mockDb = {
 		})),
 	})),
 	select: mock(() => ({
-		from: mock(() => ({
-			where: mock(() => ({
-				limit: mock(() => Promise.resolve([])),
-			})),
-			orderBy: mock(() => ({
-				limit: mock(() => Promise.resolve([])),
-			})),
-		})),
+		from: mock(
+			() =>
+				({
+					where: mock(() => ({
+						limit: mock(() => Promise.resolve([])),
+					})),
+					orderBy: mock(() => ({
+						limit: mock(() => Promise.resolve([])),
+					})),
+				}) as any
+		),
 	})),
 };
 
@@ -60,13 +63,16 @@ describe("Crawler Service", () => {
 			completed_at: new Date(),
 			duration_ms: 1000,
 		};
-		mockDb.select.mockImplementationOnce(() => ({
-			from: mock(() => ({
-				where: mock(() => ({
-					limit: mock(() => Promise.resolve([mockRow])),
-				})),
-			})),
-		}));
+		mockDb.select.mockImplementationOnce(
+			() =>
+				({
+					from: mock(() => ({
+						where: mock(() => ({
+							limit: mock(() => Promise.resolve([mockRow])),
+						})),
+					})),
+				}) as any
+		);
 
 		const status = await getCrawlStatus("j1");
 		expect(status?.status).toBe("completed");
@@ -74,13 +80,16 @@ describe("Crawler Service", () => {
 	});
 
 	test("getCrawlHistory returns history list", async () => {
-		mockDb.select.mockImplementationOnce(() => ({
-			from: mock(() => ({
-				orderBy: mock(() => ({
-					limit: mock(() => Promise.resolve([])),
-				})),
-			})),
-		}));
+		mockDb.select.mockImplementationOnce(
+			() =>
+				({
+					from: mock(() => ({
+						orderBy: mock(() => ({
+							limit: mock(() => Promise.resolve([])),
+						})),
+					})),
+				}) as any
+		);
 		const history = await getCrawlHistory();
 		expect(Array.isArray(history)).toBe(true);
 	});

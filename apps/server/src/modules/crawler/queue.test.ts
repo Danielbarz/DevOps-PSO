@@ -29,7 +29,7 @@ mock.module("../../lib/redis", () => ({
 }));
 
 // Mock DB
-const chain = {
+const chain: any = {
 	set: mock(() => chain),
 	where: mock(() => chain),
 	returning: mock(() => Promise.resolve([{ id: "1", source: "arxiv" }])),

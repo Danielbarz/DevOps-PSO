@@ -2,9 +2,9 @@ import { beforeEach, describe, expect, mock, test } from "bun:test";
 
 // Mock redis
 const mockRedis = {
-	get: mock(() => Promise.resolve(null)),
+	get: mock(() => Promise.resolve(null as string | null)),
 	set: mock(() => Promise.resolve("OK")),
-	keys: mock(() => Promise.resolve([])),
+	keys: mock(() => Promise.resolve([] as string[])),
 	del: mock(() => Promise.resolve(0)),
 	on: mock(() => {
 		// intentional empty block for mock
