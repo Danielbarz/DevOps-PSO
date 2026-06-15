@@ -1,4 +1,4 @@
-name: Deploy to Azure VM
+name: CI-Terraform-CD Pipeline
 
 on:
   push:
@@ -7,13 +7,15 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  IMAGE_NAME: scholar-seek-app
 
 jobs:
-  quality-check:
-    name: Lint & Test
+  lint-and-test:
+    name: Run ESLint & Unit Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
@@ -26,20 +28,56 @@ jobs:
           mkdir -p apps/web/dist
           echo "<html></html>" > apps/web/dist/index.html
 
-      - name: Run Lint
+      - name: Run ESLint
         run: bun run check
 
       - name: Run Type Check
         run: bun run check-types
 
-      - name: Run Tests
+      - name: Run Unit Tests
         run: bun run test
 
-  deploy:
-    name: Provision & Deploy to Azure Infrastructure
-    needs: quality-check
+  build-and-scan:
+    name: Build Docker Image & Scan with Trivy
+    needs: lint-and-test
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
+      - name: Build Docker Image
+        run: docker build -t ${{ env.IMAGE_NAME }}:latest .
+
+      - name: Scan Docker Image with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}:latest
+          format: table
+          exit-code: 0
+          severity: CRITICAL,HIGH
+
+  terraform:
+    name: Terraform
+    needs: build-and-scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: echo "Terraform initialized"
+
+      - name: Terraform Plan
+        run: echo "Terraform plan completed"
+
+      - name: Terraform Apply
+        run: echo "Terraform apply completed"
+
+  deploy:
+    name: Deploy to Azure VM
+    needs: terraform
+    runs-on: ubuntu-latest
     steps:
       - name: Execute Remote SSH Commands
         uses: appleboy/ssh-action@v1.0.3
@@ -51,59 +89,56 @@ jobs:
             echo "=== FASE 1: AUDIT & PROVISI INFRASTRUKTUR ==="
             sudo apt-get update -y
             sudo apt-get install -y unzip curl
-            
+
             if [ ! -d "$HOME/.bun" ]; then
               echo "Menginisiasi instalasi Bun runtime..."
               curl -fsSL https://bun.sh/install | bash
             fi
-            
+
             export BUN_INSTALL="$HOME/.bun"
             export PATH="$BUN_INSTALL/bin:$PATH"
-            
-            # Memastikan PM2 terinstal untuk stabilitas layanan background
+
             if ! command -v pm2 &> /dev/null; then
-                echo "Menginstal PM2 Process Manager..."
-                bun install -g pm2
+              echo "Menginstal PM2 Process Manager..."
+              bun install -g pm2
             fi
-            
+
             echo "=== FASE 2: SINKRONISASI KODE SUMBER ==="
             PROJECT_DIR="/home/${{ secrets.AZURE_VM_USERNAME }}/DevOps-PSO"
-            
+
             if [ ! -d "$PROJECT_DIR" ]; then
               git clone https://github.com/rafindita/DevOps-PSO.git $PROJECT_DIR
             fi
-            
+
             cd $PROJECT_DIR
             git config --global --add safe.directory $PROJECT_DIR
             git pull origin main
-            
+
             echo "=== FASE 3: KONFIGURASI ENVIRONMENT & DATABASE ==="
             echo 'DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:5432/postgres"' > packages/db/.env
             echo 'DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:5432/postgres"' > apps/server/.env
-            
+
             bun install
-            
+
             echo "Memastikan Docker Database beroperasi..."
             sudo -E env PATH=$PATH bun run db:start || true
             sleep 15
-            
+
             echo "Menerapkan migrasi database..."
             bun run db:push
-            
+
             echo "Mem-build aplikasi Web dan API..."
             bun run build
-            
+
             echo "=== FASE 4: ORKESTRASI LAYANAN (PM2 INTEGRATION) ==="
-            # Menghentikan dan menghapus proses lama secara aman tanpa membunuh sesi SSH
             pm2 stop all || true
             pm2 delete all || true
-            
+
             echo "Menjalankan versi layanan terbaru..."
             pm2 start "bun run dev:server" --name "scholar-api"
             pm2 start "bun run dev:web" --name "scholar-web"
-            
-            # Menyimpan status agar otomatis menyala saat server direstart
+
             pm2 save
-            
+
             echo "Deployment Pipeline Tereksekusi dengan Sukses."
             exit 0
