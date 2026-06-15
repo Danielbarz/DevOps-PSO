@@ -44,7 +44,7 @@ export function getCrawlQueue(): Queue<CrawlJobData> {
 	return queue as unknown as Queue<CrawlJobData>;
 }
 
-async function processJob(
+export async function processJob(
 	historyId: string,
 	source: string,
 	options: CrawlOptions

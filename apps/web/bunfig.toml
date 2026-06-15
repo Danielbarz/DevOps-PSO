@@ -1,0 +1,4 @@
+[test]
+coverage = true
+coverageThreshold = 0.75
+ignore = ["**/node_modules/**", "**/dist/**"]
