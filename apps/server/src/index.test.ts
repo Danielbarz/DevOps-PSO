@@ -14,11 +14,10 @@ mock.module("@elysia/static", () => ({
 	staticPlugin: () => (app: unknown) => app,
 }));
 
-import { Elysia } from "elysia";
+import { app } from "./index";
 
 describe("Server basic tests", () => {
 	test("Health check endpoint returns 200", async () => {
-		const { app } = await import("./index");
 		const response = await app.handle(new Request("http://localhost/health"));
 		expect(response.status).toBe(200);
 		const body = await response.json();
@@ -26,7 +25,6 @@ describe("Server basic tests", () => {
 	});
 
 	test("Non-existent route returns frontend index", async () => {
-		const { app } = await import("./index");
 		const response = await app.handle(
 			new Request("http://localhost/some-random-route")
 		);
@@ -39,28 +37,18 @@ describe("Server basic tests", () => {
 			() => undefined
 		);
 
-		const testApp = new Elysia()
-			.onError(({ code, error, set }) => {
-				if (code === "VALIDATION") {
-					set.status = 400;
-					return { error: error.message };
-				}
-				console.error(error);
-				set.status = 500;
-				return { error: "Internal Server Error" };
-			})
-			.get("/trigger-error", () => {
-				throw new Error("something went wrong");
-			});
-
-		const res = await testApp.handle(
-			new Request("http://localhost/trigger-error")
+		const response = await app.handle(
+			new Request("http://localhost/api/papers/invalid-uuid-format")
 		);
-		const json = await res.json();
 
-		expect(res.status).toBe(500);
-		expect(json).toEqual({ error: "Internal Server Error" });
-
+		expect(response.status).toBe(500);
 		consoleSpy.mockRestore();
+	});
+
+	test("onError returns 400 for VALIDATION error", async () => {
+		const response = await app.handle(
+			new Request("http://localhost/api/papers?page=abc")
+		);
+		expect(response.status).toBe(400);
 	});
 });
