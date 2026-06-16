@@ -5,11 +5,11 @@ import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
-    plugins: [
-        tsconfigPaths(),
-        tailwindcss(),
-        // Ganti tanstackStart({ ssr: false }) menjadi mode statis
-        tanstackStart({}),
-        viteReact(),
-    ],
+	plugins: [
+		tsconfigPaths(),
+		tailwindcss(),
+		// Ganti tanstackStart({ ssr: false }) menjadi mode statis
+		tanstackStart({}),
+		viteReact(),
+	],
 });

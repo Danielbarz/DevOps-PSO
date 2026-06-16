@@ -1,4 +1,3 @@
-
 // server entry point
 import path from "node:path";
 import { staticPlugin } from "@elysia/static";
@@ -118,4 +117,3 @@ if (process.env.NODE_ENV !== "test") {
 		process.exit(0);
 	});
 }
-
