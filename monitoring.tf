@@ -13,22 +13,21 @@ provider "azurerm" {
 }
 
 # ====================================================================
-# 1. LOG ANALYTICS WORKSPACE (Wadah Penyimpanan Semua Log & Metrik)
+# 1. LOG ANALYTICS WORKSPACE
 # ====================================================================
 resource "azurerm_log_analytics_workspace" "monitoring_law" {
   name                = "law-scholarseek-prod"
-  location            = "Southeast Asia"
-  resource_group_name = "ScholarSeek"
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
   sku                 = "PerGB2018"
   retention_in_days   = 30
 }
 
 # ====================================================================
-# 2. SENSOR DIAGNOSTIC SETTINGS (Menyaring Log Console Bun & Elysia)
+# 2. SENSOR DIAGNOSTIC SETTINGS
 # ====================================================================
 resource "azurerm_monitor_diagnostic_setting" "elysia_bun_sensor" {
   name                       = "ds-elysia-bun-logs"
-
   # MENEMBAK LANGSUNG KE ID WEB APP MANUAL KAMU
   target_resource_id         = "/subscriptions/ca9da7e3-35f9-458e-8fa4-1bfe1add2841/resourceGroups/ScholarSeek/providers/Microsoft.Web/sites/scholar-seek-app"
   log_analytics_workspace_id = azurerm_log_analytics_workspace.monitoring_law.id
@@ -43,12 +42,12 @@ resource "azurerm_monitor_diagnostic_setting" "elysia_bun_sensor" {
 }
 
 # ====================================================================
-# 3. ACTION GROUP WEBHOOK (Jembatan Otomatis ke Google Sheets)
+# 3. ACTION GROUP
 # ====================================================================
-resource "azurerm_monitor_action_group" "sheets_webhook_target" {
+resource "azurerm_monitor_action_group" "main_alert_group" {
   name                = "ag-scholarseek-alert"
-  resource_group_name = "ScholarSeek"
-  short_name          = "AlertSheets"
+  resource_group_name = azurerm_resource_group.main.name
+  short_name          = "Alerts"
 
   webhook_receiver {
     name                    = "google-sheets-receiver"
@@ -56,10 +55,16 @@ resource "azurerm_monitor_action_group" "sheets_webhook_target" {
     service_uri             = "https://your-google-sheets-webhook-url.com"
     use_common_alert_schema = true
   }
+
+  email_receiver {
+    name                    = "send-to-admin"
+    email_address           = var.alert_email_address
+    use_common_alert_schema = true
+  }
 }
 
 # ====================================================================
-# 4. METRIC ALERT RULE (Alarm Otomatis jika Server Crash / HTTP 5xx)
+# 4. METRIC ALERT RULE
 # ====================================================================
 resource "azurerm_monitor_metric_alert" "http_5xx_critical_alert" {
   name                = "alert-critical-elysia-bun"
@@ -81,6 +86,6 @@ resource "azurerm_monitor_metric_alert" "http_5xx_critical_alert" {
   }
 
   action {
-    action_group_id = azurerm_monitor_action_group.sheets_webhook_target.id
+    action_group_id = azurerm_monitor_action_group.main_alert_group.id
   }
 }
