@@ -20,7 +20,6 @@ process.on("uncaughtException", (err) => {
 		err.message.includes("ETIMEDOUT") ||
 		err.message.includes("Connection is closed")
 	) {
-		// Log gracefully without crashing
 		return;
 	}
 	console.error("Uncaught Exception:", err);
@@ -30,15 +29,11 @@ process.on("uncaughtException", (err) => {
 process.on("unhandledRejection", (reason: unknown) => {
 	const msg = reason instanceof Error ? reason.message : String(reason);
 	if (msg.includes("ETIMEDOUT") || msg.includes("Connection is closed")) {
-		// Log gracefully without crashing
 		return;
 	}
 	console.error("Unhandled Rejection:", reason);
 });
 
-// Resolusi Path Vite SSR/Client:
-// import.meta.dirname saat dijalankan dari apps/server/dist/index.mjs berada di apps/server/dist
-// Path navigasi: apps/server/dist -> apps/server -> apps -> web -> dist -> client
 const frontendAssetsPath = path.join(
 	import.meta.dirname,
 	"..",
@@ -48,10 +43,8 @@ const frontendAssetsPath = path.join(
 	"client"
 );
 
-const frontendIndexPath = path.join(
-	frontendAssetsPath,
-	"index.html"
-);
+// [FORMAT FIXED]
+const frontendIndexPath = path.join(frontendAssetsPath, "index.html");
 
 const app = new Elysia()
 	.onError(({ code, error, set }) => {
@@ -86,13 +79,17 @@ const app = new Elysia()
 		}
 	});
 
-// Validasi keberadaan direktori statis sebelum inisialisasi rute
 if (fs.existsSync(frontendAssetsPath)) {
 	app
 		.use(staticPlugin({ assets: frontendAssetsPath, prefix: "/" }))
 		.get("/*", () => Bun.file(frontendIndexPath));
 } else {
-	app.get("/*", () => "Frontend dist/client folder not found. Please ensure 'bun run build' was executed in apps/web.");
+	// [FORMAT FIXED]
+	app.get(
+		"/*",
+		() =>
+			"Frontend dist/client folder not found. Please ensure 'bun run build' was executed in apps/web."
+	);
 }
 
 export type App = typeof app;
