@@ -115,12 +115,11 @@ jobs:
             git pull origin main
 
             echo "=== FASE 3: KONFIGURASI ENVIRONMENT & DATABASE ==="
-            cat > apps/server/.env << 'ENVEOF'
-            DATABASE_URL="${{ secrets.PROD_DATABASE_URL }}"
-            REDIS_URL="${{ secrets.PROD_REDIS_URL }}"
-            CORS_ORIGIN="${{ secrets.PROD_CORS_ORIGIN }}"
-            NODE_ENV=production
-            ENVEOF
+            printf 'DATABASE_URL="%s"\nREDIS_URL="%s"\nCORS_ORIGIN="%s"\nNODE_ENV=production\n' \
+              "${{ secrets.PROD_DATABASE_URL }}" \
+              "${{ secrets.PROD_REDIS_URL }}" \
+              "${{ secrets.PROD_CORS_ORIGIN }}" \
+              > apps/server/.env
 
             echo "DATABASE_URL=\"${{ secrets.PROD_DATABASE_URL }}\"" > packages/db/.env
 
