@@ -37,27 +37,27 @@ jobs:
           tags: ghcr.io/rafindita/devops-pso:${{ github.sha }}
           file: ./Dockerfile
 
-  deploy:
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write #This is required for requesting the JWT
-      contents: read #This is required for actions/checkout
-
-    needs: build
-    
-    steps:
-      
-      - name: Login to Azure
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_E8E9B0FF7D9145119136CD4C5F9E830A }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_FAFB86707A7D4AC1837A80AA08354B01 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_AC236E5BA7E94009B12CBC69C4951052 }}
-
-      - name: Deploy to Azure Web App
-        id: deploy-to-webapp
-        uses: azure/webapps-deploy@v2
-        with:
-          app-name: 'scholarseek-app-7670'
-          slot-name: 'Production'
-          images: 'ghcr.io/rafindita/devops-pso:${{ github.sha }}'
+#   deploy:
+#     runs-on: ubuntu-latest
+#     permissions:
+#       id-token: write #This is required for requesting the JWT
+#       contents: read #This is required for actions/checkout
+# 
+#     needs: build
+#     
+#     steps:
+#       
+#       - name: Login to Azure
+#         uses: azure/login@v2
+#         with:
+#           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_E8E9B0FF7D9145119136CD4C5F9E830A }}
+#           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_FAFB86707A7D4AC1837A80AA08354B01 }}
+#           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_AC236E5BA7E94009B12CBC69C4951052 }}
+# 
+#       - name: Deploy to Azure Web App
+#         id: deploy-to-webapp
+#         uses: azure/webapps-deploy@v2
+#         with:
+#           app-name: 'scholarseek-app-7670'
+#           slot-name: 'Production'
+#           images: 'ghcr.io/rafindita/devops-pso:${{ github.sha }}'
