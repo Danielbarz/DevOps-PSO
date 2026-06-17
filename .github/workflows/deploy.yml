@@ -121,7 +121,7 @@ DATABASE_URL=$PROD_DATABASE_URL
 REDIS_URL=$PROD_REDIS_URL
 CORS_ORIGIN=$PROD_CORS_ORIGIN
 NODE_ENV=production
-PORT=4000
+PORT=3000
 ENVEOF
 
             echo "DATABASE_URL=$PROD_DATABASE_URL" > packages/db/.env
@@ -144,13 +144,6 @@ ENVEOF
 module.exports = {
   apps: [
     {
-      name: "scholar-web",
-      script: "bun",
-      args: "apps/web/dist/server/server.js",
-      cwd: "$PROJECT_DIR",
-      env: { NODE_ENV: "production", PORT: "3000" }
-    },
-    {
       name: "scholar-api",
       script: "bun",
       args: "apps/server/dist/index.mjs",
@@ -160,7 +153,17 @@ module.exports = {
         REDIS_URL: "$PROD_REDIS_URL",
         CORS_ORIGIN: "$PROD_CORS_ORIGIN",
         NODE_ENV: "production",
-        PORT: "4000"
+        PORT: "3000"
+      }
+    },
+    {
+      name: "scholar-web",
+      script: "bun",
+      args: "run dev:web",
+      cwd: "$PROJECT_DIR",
+      env: {
+        NODE_ENV: "production",
+        VITE_SERVER_URL: "$PROD_API_URL"
       }
     }
   ]
