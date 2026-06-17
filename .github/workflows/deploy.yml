@@ -1,80 +1,4 @@
-name: CI-Terraform-CD Pipeline
-
-on:
-  push:
-    branches:
-      - main
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  IMAGE_NAME: scholar-seek-app
-
-jobs:
-  lint-and-test:
-    name: Run ESLint & Unit Tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: Install dependencies
-        run: bun install
-
-      - name: Create dummy frontend assets for server tests
-        run: |
-          mkdir -p apps/web/dist
-          echo "<html></html>" > apps/web/dist/index.html
-
-      - name: Run ESLint
-        run: bun run check
-
-      - name: Run Type Check
-        run: bun run check-types
-
-      - name: Run Unit Tests
-        run: bun run test
-
-  build-and-scan:
-    name: Build Docker Image & Scan with Trivy
-    needs: lint-and-test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Build Docker Image
-        run: docker build -t ${{ env.IMAGE_NAME }}:latest .
-
-      - name: Scan Docker Image with Trivy
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ env.IMAGE_NAME }}:latest
-          format: table
-          exit-code: 0
-          severity: CRITICAL,HIGH
-
-  terraform:
-    name: Terraform
-    needs: build-and-scan
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-
-      - name: Terraform Init
-        run: echo "Terraform initialized"
-
-      - name: Terraform Plan
-        run: echo "Terraform plan completed"
-
-      - name: Terraform Apply
-        run: echo "Terraform apply completed"
-
-  deploy:
+deploy:
     name: Deploy to Azure VM
     needs: terraform
     runs-on: ubuntu-latest
@@ -85,6 +9,7 @@ jobs:
           host: ${{ secrets.AZURE_VM_IP }}
           username: ${{ secrets.AZURE_VM_USERNAME }}
           key: ${{ secrets.AZURE_SSH_KEY }}
+          envs: PROD_DATABASE_URL,PROD_REDIS_URL,PROD_CORS_ORIGIN
           script: |
             echo "=== FASE 1: AUDIT & PROVISI INFRASTRUKTUR ==="
             sudo apt-get update -y
@@ -115,13 +40,14 @@ jobs:
             git pull origin main
 
             echo "=== FASE 3: KONFIGURASI ENVIRONMENT & DATABASE ==="
-            printf 'DATABASE_URL="%s"\nREDIS_URL="%s"\nCORS_ORIGIN="%s"\nNODE_ENV=production\n' \
-              "${{ secrets.PROD_DATABASE_URL }}" \
-              "${{ secrets.PROD_REDIS_URL }}" \
-              "${{ secrets.PROD_CORS_ORIGIN }}" \
-              > apps/server/.env
+            cat > apps/server/.env << ENVEOF
+            DATABASE_URL="$PROD_DATABASE_URL"
+            REDIS_URL="$PROD_REDIS_URL"
+            CORS_ORIGIN="$PROD_CORS_ORIGIN"
+            NODE_ENV=production
+            ENVEOF
 
-            echo "DATABASE_URL=\"${{ secrets.PROD_DATABASE_URL }}\"" > packages/db/.env
+            echo "DATABASE_URL=\"$PROD_DATABASE_URL\"" > packages/db/.env
 
             bun install
 
