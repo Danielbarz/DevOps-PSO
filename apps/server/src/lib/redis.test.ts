@@ -22,6 +22,14 @@ mock.module("ioredis", () => {
 	};
 });
 
+mock.module("@scholar-seek/env/server", () => {
+	return {
+		env: {
+			REDIS_URL: "redis://localhost:6379"
+		}
+	};
+});
+
 import { getRedis } from "./redis";
 
 describe("Redis Lib", () => {
