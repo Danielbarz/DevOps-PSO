@@ -14,7 +14,7 @@ mock.module("@elysia/static", () => ({
 	staticPlugin: () => (app: unknown) => app,
 }));
 
-import { app } from "./index";
+import app from "./index";
 
 describe("Server basic tests", () => {
 	test("Health check endpoint returns 200", async () => {

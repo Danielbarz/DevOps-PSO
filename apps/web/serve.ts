@@ -1,3 +1,4 @@
+// @ts-expect-error - dist is only available after build
 import handler from "./dist/server/server.js";
 
 const PORT = 3001;
