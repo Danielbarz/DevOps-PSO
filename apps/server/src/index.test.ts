@@ -14,6 +14,11 @@ mock.module("@elysia/static", () => ({
 	staticPlugin: () => (app: unknown) => app,
 }));
 
+mock.module("node:fs", () => ({
+	...require("node:fs"),
+	existsSync: () => true,
+}));
+
 import app from "./index";
 
 describe("Server basic tests", () => {
