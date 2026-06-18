@@ -31,9 +31,7 @@ export function BookmarkButton({ paperId, className }: BookmarkButtonProps) {
 		queryFn: async () => {
 			const { data, error } = await api.api.bookmarks.get();
 			if (error) {
-				if (error.status === 401 || error.status === 500) {
-					useAuthStore.getState().logout();
-				}
+				// ✅ Don't auto-logout on 401 — just throw so the query fails silently
 				throw error;
 			}
 			return data;

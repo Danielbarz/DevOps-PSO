@@ -37,67 +37,64 @@ function AuthSection() {
 	const [error, setError] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
 
-	const performLogin = async () => {
-		const { data, error: apiError } = await api.api.auth.login.post({
-			username,
-			password,
-		});
-
-		if (apiError) {
-			const errorMsg =
-				typeof apiError.value === "string"
-					? apiError.value
-					: (apiError.value as Record<string, unknown>)?.error ||
-						"Authentication failed";
-			setError(String(errorMsg));
-			return false;
-		}
-
-		if (data?.user && data?.token) {
-			// biome-ignore lint/suspicious/noExplicitAny: treaty type issue
-			setAuth(data.user as any, data.token);
-			setIsOpen(false);
-			return true;
-		}
-		return false;
-	};
-
-	const performRegister = async () => {
-		const { data, error: apiError } = await api.api.auth.register.post({
-			username,
-			password,
-		});
-
-		if (apiError) {
-			const errorMsg =
-				typeof apiError.value === "string"
-					? apiError.value
-					: (apiError.value as Record<string, unknown>)?.error ||
-						"Registration failed";
-			setError(String(errorMsg));
-			return false;
-		}
-
-		if (data?.user) {
-			// Auto-login after successful registration
-			const success = await performLogin();
-			if (!success) {
-				setError("Registered successfully! Please login.");
-			}
-			return true;
-		}
-		return false;
-	};
-
 	const handleAuth = async (isLogin: boolean) => {
 		try {
 			setIsLoading(true);
 			setError("");
 
 			if (isLogin) {
-				await performLogin();
+				// Login flow — call directly, never store Treaty endpoint in a variable
+				const { data, error: apiError } = await api.api.auth.login.post({
+					username,
+					password,
+				});
+
+				if (apiError) {
+					const errorMsg =
+						typeof apiError.value === "string"
+							? apiError.value
+							: (apiError.value as Record<string, unknown>)?.error ||
+								"Authentication failed";
+					setError(String(errorMsg));
+					return;
+				}
+
+				if (data?.user && data?.token) {
+					// biome-ignore lint/suspicious/noExplicitAny: treaty type issue
+					setAuth(data.user as any, data.token);
+					setIsOpen(false);
+				}
 			} else {
-				await performRegister();
+				// Register flow
+				const { data, error: apiError } = await api.api.auth.register.post({
+					username,
+					password,
+				});
+
+				if (apiError) {
+					const errorMsg =
+						typeof apiError.value === "string"
+							? apiError.value
+							: (apiError.value as Record<string, unknown>)?.error ||
+								"Registration failed";
+					setError(String(errorMsg));
+					return;
+				}
+
+				if (data?.user) {
+					// Auto-login after successful registration
+					const { data: loginData, error: loginError } =
+						await api.api.auth.login.post({ username, password });
+
+					if (loginError || !loginData?.token) {
+						setError("Registered successfully! Please login.");
+						return;
+					}
+
+					// biome-ignore lint/suspicious/noExplicitAny: treaty type issue
+					setAuth(loginData.user as any, loginData.token);
+					setIsOpen(false);
+				}
 			}
 		} catch (_e: unknown) {
 			setError("An error occurred");
@@ -227,12 +224,7 @@ function ScrapingSection() {
 		queryFn: async () => {
 			const { data, error } = await api.api.crawl["last-updated"].get();
 			if (error) {
-				if (
-					(error.status as number) === 401 ||
-					(error.status as number) === 500
-				) {
-					useAuthStore.getState().logout();
-				}
+				// ✅ Don't auto-logout on 401 — crawl endpoint failing shouldn't sign the user out
 				if (error.status === 404) {
 					return null;
 				}
@@ -254,12 +246,7 @@ function ScrapingSection() {
 				.status({ jobId: activeJobId })
 				.get();
 			if (error) {
-				if (
-					(error.status as number) === 401 ||
-					(error.status as number) === 500
-				) {
-					useAuthStore.getState().logout();
-				}
+				// ✅ Don't auto-logout on 401 — crawl endpoint failing shouldn't sign the user out
 				if (error.status === 404) {
 					setActiveJobId(null);
 				}
