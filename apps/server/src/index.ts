@@ -64,23 +64,23 @@ const app = new Elysia()
 			const { db } = await import("@scholar-seek/db");
 			const { papers } = await import("@scholar-seek/db/schema/papers");
 			const { sql } = await import("drizzle-orm");
-			
+
 			// Test 1: Simple select
 			const result = await db.select().from(papers).limit(1);
-			
+
 			// Test 2: JSONB casting which might be failing
 			const testJsonb = await db.execute(sql`SELECT '["test"]'::jsonb::text`);
-			
-			return { 
-				status: "db_ok", 
+
+			return {
+				status: "db_ok",
 				papersFound: result.length,
-				jsonbCastWorks: !!testJsonb
+				jsonbCastWorks: !!testJsonb,
 			};
 		} catch (error: unknown) {
-			return { 
-				status: "db_error", 
+			return {
+				status: "db_error",
 				message: error instanceof Error ? error.message : String(error),
-				stack: error instanceof Error ? error.stack : undefined
+				stack: error instanceof Error ? error.stack : undefined,
 			};
 		}
 	});
