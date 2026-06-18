@@ -96,8 +96,14 @@ function BookmarksPage() {
 		);
 	}
 
-	const collections = collectionsData?.collections || [];
-	const bookmarks = bookmarksData?.bookmarks || [];
+	const collections =
+		collectionsData && "collections" in collectionsData
+			? collectionsData.collections
+			: [];
+	const bookmarks =
+		bookmarksData && "bookmarks" in bookmarksData
+			? bookmarksData.bookmarks
+			: [];
 
 	// Filter bookmarks
 	const filteredBookmarks = bookmarks.filter(

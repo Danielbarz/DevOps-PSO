@@ -1,6 +1,6 @@
 import { describe, expect, mock, test } from "bun:test";
-import { jwt } from "@elysiajs/jwt";
 import { Elysia } from "elysia";
+import { authPlugin } from "../../lib/auth";
 import { authModule } from "./index";
 
 // Mock the database
@@ -27,15 +27,8 @@ mock.module("@scholar-seek/db", () => ({
 Bun.password.hash = mock().mockResolvedValue("hashed_password");
 Bun.password.verify = mock().mockResolvedValue(true);
 
-// Create a test app wrapper to inject JWT plugin!
-const testApp = new Elysia()
-	.use(
-		jwt({
-			name: "jwt",
-			secret: "super-secret-test-key",
-		})
-	)
-	.use(authModule);
+// Create a test app wrapper to inject the shared auth plugin!
+const testApp = new Elysia().use(authPlugin).use(authModule);
 
 describe("Auth Module", () => {
 	test("POST /api/auth/register", async () => {

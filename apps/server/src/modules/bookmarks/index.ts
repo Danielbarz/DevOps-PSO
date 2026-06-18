@@ -1,39 +1,24 @@
-import { jwt } from "@elysiajs/jwt";
 import { db } from "@scholar-seek/db";
 import { bookmarks } from "@scholar-seek/db/schema/bookmarks";
 import { collections } from "@scholar-seek/db/schema/collections";
 import { papers } from "@scholar-seek/db/schema/papers";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { Elysia, t } from "elysia";
+import { authPlugin } from "../../lib/auth";
+
 export const bookmarksModule = new Elysia({ prefix: "/api" })
-	.use(
-		jwt({
-			name: "jwt",
-			secret: process.env.JWT_SECRET || "super-secret-jwt-key",
-			exp: "7d",
-		})
-	)
-	.derive(async ({ jwt, headers, set }) => {
-		const auth = headers.authorization;
-		const token = auth?.startsWith("Bearer ") ? auth.slice(7) : null;
-
-		if (!token) {
-			set.status = 401;
-			throw new Error("Unauthorized");
-		}
-
-		const payload = await jwt.verify(token);
-		if (!payload) {
-			set.status = 401;
-			throw new Error("Unauthorized");
-		}
-		if (!payload.id) {
-			set.status = 401;
-			throw new Error("Unauthorized");
-		}
-
-		return { userId: payload.id as string };
+	.use(authPlugin)
+	.guard({
+		beforeHandle: ({ userId, set }) => {
+			if (!userId) {
+				set.status = 401;
+				return { error: "Unauthorized" };
+			}
+		},
 	})
+	.derive(({ userId }) => ({
+		userId: userId as string,
+	}))
 	// ==========================================
 	// COLLECTIONS ENDPOINTS
 	// ==========================================

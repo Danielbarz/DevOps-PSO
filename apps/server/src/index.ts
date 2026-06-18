@@ -1,9 +1,9 @@
 import path from "node:path";
 import { staticPlugin } from "@elysia/static";
 import { cors } from "@elysiajs/cors";
-import { jwt } from "@elysiajs/jwt";
 import { Elysia } from "elysia";
 
+import { authPlugin } from "./lib/auth";
 import { authModule } from "./modules/auth";
 import { bookmarksModule } from "./modules/bookmarks";
 import { crawlerModule } from "./modules/crawler";
@@ -31,13 +31,7 @@ const frontendIndexPath = path.join(
 );
 
 const app = new Elysia()
-	.use(
-		jwt({
-			name: "jwt",
-			secret: process.env.JWT_SECRET || "super-secret-jwt-key",
-			exp: "7d",
-		})
-	)
+	.use(authPlugin)
 	.onError(({ code, error, set }) => {
 		if (code === "VALIDATION") {
 			set.status = 400;

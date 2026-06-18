@@ -55,7 +55,10 @@ export function BookmarkButton({ paperId, className }: BookmarkButtonProps) {
 
 	// Find all bookmarks for this specific paper
 	const paperBookmarks =
-		bookmarksData?.bookmarks?.filter(
+		(bookmarksData && "bookmarks" in bookmarksData
+			? bookmarksData.bookmarks
+			: []
+		).filter(
 			(b: { paper: { id: string }; collectionId: string | null; id: string }) =>
 				b.paper.id === paperId
 		) || [];
@@ -190,31 +193,33 @@ export function BookmarkButton({ paperId, className }: BookmarkButtonProps) {
 
 						{/* Collections List */}
 						<div className="flex h-[400px] max-h-[80vh] flex-col gap-4 overflow-y-auto pr-4">
-							{collectionsData?.collections?.map(
-								(col: { id: string; name: string }) => (
-									<div
-										className="flex items-center space-x-3 py-1"
-										key={col.id}
-									>
-										<Checkbox
-											checked={paperBookmarks.some(
-												(b: { collectionId: string | null }) =>
-													b.collectionId === col.id
-											)}
-											className="h-5 w-5"
-											disabled={toggleBookmark.isPending}
-											id={`checkbox-${col.id}-${paperId}`}
-											onCheckedChange={() => toggleBookmark.mutate(col.id)}
-										/>
-										<label
-											className="cursor-pointer font-medium text-base leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-											htmlFor={`checkbox-${col.id}-${paperId}`}
+							{collectionsData &&
+								"collections" in collectionsData &&
+								collectionsData.collections.map(
+									(col: { id: string; name: string }) => (
+										<div
+											className="flex items-center space-x-3 py-1"
+											key={col.id}
 										>
-											{col.name}
-										</label>
-									</div>
-								)
-							)}
+											<Checkbox
+												checked={paperBookmarks.some(
+													(b: { collectionId: string | null }) =>
+														b.collectionId === col.id
+												)}
+												className="h-5 w-5"
+												disabled={toggleBookmark.isPending}
+												id={`checkbox-${col.id}-${paperId}`}
+												onCheckedChange={() => toggleBookmark.mutate(col.id)}
+											/>
+											<label
+												className="cursor-pointer font-medium text-base leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+												htmlFor={`checkbox-${col.id}-${paperId}`}
+											>
+												{col.name}
+											</label>
+										</div>
+									)
+								)}
 						</div>
 
 						<Separator />

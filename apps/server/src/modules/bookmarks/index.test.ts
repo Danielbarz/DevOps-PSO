@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, mock, test } from "bun:test";
-import { jwt } from "@elysiajs/jwt";
 import { Elysia } from "elysia";
+import { authPlugin } from "../../lib/auth";
 import { bookmarksModule } from "./index";
 
 // Mock the database
@@ -45,12 +45,7 @@ let testApp: any;
 describe("Bookmarks Module", () => {
 	beforeAll(async () => {
 		testApp = new Elysia()
-			.use(
-				jwt({
-					name: "jwt",
-					secret: process.env.JWT_SECRET || "super-secret-jwt-key",
-				})
-			)
+			.use(authPlugin)
 			.use(bookmarksModule) // Mount it inside the app
 			.get("/sign", async ({ jwt }) => await jwt.sign({ id: "1" }));
 
