@@ -54,6 +54,9 @@ export const authModule = new Elysia({ prefix: "/api/auth" })
 					set.status = 400;
 					return { error: "Username already taken" };
 				}
+
+				console.error("[AUTH] Registration Error 500:", err);
+
 				set.status = 500;
 				return {
 					error: "Internal Server Error",

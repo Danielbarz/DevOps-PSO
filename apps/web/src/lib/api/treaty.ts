@@ -10,15 +10,15 @@ const SERVER_URL =
 
 export const api = treaty<App>(SERVER_URL, {
 	fetcher: globalThis.fetch,
-	// Replace onRequest with the headers function
-	headers: () => {
+	onRequest: (_path, options) => {
 		const token = useAuthStore.getState().token;
 		if (token) {
-			return {
-				authorization: `Bearer ${token}`,
-			};
+			if (!options.headers) {
+				options.headers = {};
+			}
+			// @ts-ignore
+			options.headers.authorization = `Bearer ${token}`;
 		}
-		return {};
 	},
 });
 

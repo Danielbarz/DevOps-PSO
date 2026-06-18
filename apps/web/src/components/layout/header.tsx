@@ -119,6 +119,9 @@ function AuthSection() {
 					</Avatar>
 					<span className="font-medium text-sm">{user.username}</span>
 				</div>
+				<Button render={<Link to="/bookmarks" />} size="sm" variant="outline">
+					Bookmarks
+				</Button>
 				<Button onClick={logout} size="sm" variant="outline">
 					Logout
 				</Button>
@@ -128,11 +131,8 @@ function AuthSection() {
 
 	return (
 		<Dialog onOpenChange={setIsOpen} open={isOpen}>
-			{/* @ts-ignore */}
-			<DialogTrigger asChild>
-				<Button size="sm" variant="outline">
-					Login / Register
-				</Button>
+			<DialogTrigger render={<Button size="sm" variant="outline" />}>
+				Login / Register
 			</DialogTrigger>
 			<DialogContent className="sm:max-w-md">
 				<DialogHeader>
