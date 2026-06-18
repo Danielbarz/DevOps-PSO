@@ -1,9 +1,6 @@
 # Base stage for shared dependencies
-FROM oven/bun:1.1.20-alpine AS base
+FROM oven/bun:alpine AS base
 WORKDIR /app
-
-# Install git for packages that are installed from a git repository
-RUN apk add --no-cache git
 
 # Copy root config files
 COPY package.json bun.lock tsconfig.json turbo.json ./
@@ -26,7 +23,7 @@ ENV SKIP_ENV_VALIDATION=1
 RUN bun run build --filter=@scholar-seek/web
 
 # --- SERVER RUNTIME ---
-FROM oven/bun:1.1.20-alpine AS server
+FROM oven/bun:alpine AS server
 WORKDIR /app
 COPY --from=server-builder /app/apps/server/dist ./dist
 COPY --from=server-builder /app/apps/server/package.json ./
@@ -36,7 +33,7 @@ EXPOSE 3000
 CMD ["bun", "run", "dist/index.mjs"]
 
 # --- WEB RUNTIME ---
-FROM oven/bun:1.1.20-alpine AS web
+FROM oven/bun:alpine AS web
 WORKDIR /app
 COPY --from=web-builder /app/apps/web/dist ./dist
 COPY --from=web-builder /app/apps/web/package.json ./
