@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 import { db } from "@scholar-seek/db";
-import { users } from "@scholar-seek/db/schema/users";
 import { papers } from "@scholar-seek/db/schema/papers";
+import { users } from "@scholar-seek/db/schema/users";
 import { eq } from "drizzle-orm";
 import app from "./index";
 
@@ -29,10 +29,20 @@ describe("True End-to-End Workflow", () => {
 	// Cleanup hook
 	beforeAll(async () => {
 		if (createdUserId && canConnect) {
-			await db.delete(users).where(eq(users.id, createdUserId)).catch(() => {});
+			await db
+				.delete(users)
+				.where(eq(users.id, createdUserId))
+				.catch(() => {
+					/* Ignore errors during cleanup */
+				});
 		}
 		if (canConnect) {
-			await db.delete(papers).where(eq(papers.id, testPaperId)).catch(() => {});
+			await db
+				.delete(papers)
+				.where(eq(papers.id, testPaperId))
+				.catch(() => {
+					/* Ignore errors during cleanup */
+				});
 		}
 	});
 
