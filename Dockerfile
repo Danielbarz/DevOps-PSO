@@ -24,11 +24,16 @@ RUN bun run build --filter=@scholar-seek/web
 
 # --- SERVER RUNTIME ---
 FROM server-builder AS server
+WORKDIR /app
+
+# Copy migrations so migrate.mjs can find them
+COPY --from=server-builder /app/packages/db/src/migrations ./migrations
+
 WORKDIR /app/apps/server
 ENV PORT=3000
 ENV NODE_ENV=production
 EXPOSE 3000
-CMD ["bun", "run", "dist/index.mjs"]
+CMD ["sh", "-c", "bun run dist/migrate.mjs && bun run dist/index.mjs"]
 
 # --- WEB RUNTIME ---
 FROM web-builder AS web
