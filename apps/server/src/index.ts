@@ -63,9 +63,9 @@ const app = new Elysia()
 		try {
 			const { db } = await import("@scholar-seek/db");
 			const { papers } = await import("@scholar-seek/db/schema/papers");
-			
+
 			await db.select().from(papers).limit(1);
-			
+
 			return { status: "db_ok" };
 		} catch (e: unknown) {
 			const result: Record<string, string> = { status: "failed" };
