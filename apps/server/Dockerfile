@@ -25,11 +25,14 @@ WORKDIR /app
 COPY --from=builder /app/apps/server/dist ./dist
 COPY --from=builder /app/apps/server/package.json ./
 
+# Copy migrations folder for production migrations
+COPY --from=builder /app/packages/db/src/migrations ./migrations
+
 # Expose port
 EXPOSE 3000
 
 # Set environment
 ENV NODE_ENV=production
 
-# Start the server
-CMD ["bun", "run", "dist/index.mjs"]
+# Start the server, running migrations first
+CMD ["sh", "-c", "bun run dist/migrate.mjs && bun run dist/index.mjs"]
