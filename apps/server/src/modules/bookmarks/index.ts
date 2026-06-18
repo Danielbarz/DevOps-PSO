@@ -4,10 +4,7 @@ import { collections } from "@scholar-seek/db/schema/collections";
 import { papers } from "@scholar-seek/db/schema/papers";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { Elysia, t } from "elysia";
-import { authPlugin } from "../../lib/auth";
-
 export const bookmarksModule = new Elysia({ prefix: "/api" })
-	.use(authPlugin)
 	.derive(async ({ jwt, headers, set }) => {
 		const auth = headers.authorization;
 		const token = auth?.startsWith("Bearer ") ? auth.slice(7) : null;

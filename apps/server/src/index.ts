@@ -29,7 +29,15 @@ const frontendIndexPath = path.join(
 	"index.html"
 );
 
+import { jwt } from "@elysiajs/jwt";
+
 const app = new Elysia()
+	.use(
+		jwt({
+			name: "jwt",
+			secret: process.env.JWT_SECRET || "super-secret-jwt-key",
+		})
+	)
 	.onError(({ code, error, set }) => {
 		if (code === "VALIDATION") {
 			set.status = 400;
