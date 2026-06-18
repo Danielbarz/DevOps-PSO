@@ -2,6 +2,9 @@
 FROM oven/bun:1.1.20-alpine AS base
 WORKDIR /app
 
+# Install git for packages that are installed from a git repository
+RUN apk add --no-cache git
+
 # Copy root config files
 COPY package.json bun.lock tsconfig.json turbo.json ./
 COPY packages packages
