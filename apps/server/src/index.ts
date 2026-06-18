@@ -3,6 +3,8 @@ import path from "node:path";
 import { staticPlugin } from "@elysia/static";
 import { cors } from "@elysiajs/cors";
 import { Elysia } from "elysia";
+import { authModule } from "./modules/auth";
+import { bookmarksModule } from "./modules/bookmarks";
 import { crawlerModule } from "./modules/crawler";
 import {
 	cleanupStuckJobs,
@@ -11,9 +13,6 @@ import {
 } from "./modules/crawler/queue";
 import { papersModule } from "./modules/papers";
 
-// Menggunakan __dirname agar path selalu relatif terhadap file index.ts
-// Kita naik 2 tingkat dari __dirname (src -> server -> apps)
-// kemudian turun ke web/dist
 const frontendAssetsPath = path.join(
 	import.meta.dirname,
 	"..",
@@ -41,8 +40,9 @@ const app = new Elysia()
 		return { error: "Internal Server Error" };
 	})
 	.use(cors())
-	// Menyajikan file statis dari folder web/dist yang telah diperbaiki path-nya
 	.use(staticPlugin({ assets: frontendAssetsPath, prefix: "/" }))
+	.use(authModule)
+	.use(bookmarksModule)
 	.use(crawlerModule)
 	.use(papersModule)
 	.get("/health", () => ({ status: "ok" }))

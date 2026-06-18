@@ -4,12 +4,13 @@ import { papers } from "@scholar-seek/db/schema/papers";
 import { eq } from "drizzle-orm";
 
 const testPaper = {
-	id: "test:paper:123",
-	title: "A Test Paper for Integration Testing",
-	abstract: "This is a test abstract.",
-	authors: ["Tester McTestface"],
-	journal: "Journal of Tests",
-	source: "test",
+  id: "test:paper:123",
+  title: "A Test Paper for Integration Testing",
+  abstract: "This is a test abstract.",
+  authors: ["Tester McTestface"],
+  journal: "Journal of Tests",
+  source: "test",
+  source_url: "http://example.com/test", // Add required field
 };
 
 const canConnect = !!process.env.DATABASE_URL;

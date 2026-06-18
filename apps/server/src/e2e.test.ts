@@ -37,7 +37,7 @@ describe("True End-to-End Workflow", () => {
 			})
 		);
 		expect(res.status).toBe(200);
-		const body = await res.json();
+		const body: any = await res.json();
 		expect(body.user).toHaveProperty("id");
 		createdUserId = body.user.id;
 	});
@@ -51,7 +51,7 @@ describe("True End-to-End Workflow", () => {
 			})
 		);
 		expect(res.status).toBe(200);
-		const body = await res.json();
+		const body: any = await res.json();
 		expect(body).toHaveProperty("token");
 		authToken = body.token;
 	});
@@ -78,7 +78,7 @@ describe("True End-to-End Workflow", () => {
 			})
 		);
 		expect(res.status).toBe(200);
-		const body = await res.json();
+		const body: any = await res.json();
 		expect(body.bookmarks.some((b: any) => b.paper_id === testPaperId)).toBe(
 			true
 		);
