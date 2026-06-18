@@ -23,21 +23,16 @@ ENV SKIP_ENV_VALIDATION=1
 RUN bun run build --filter=@scholar-seek/web
 
 # --- SERVER RUNTIME ---
-FROM oven/bun:alpine AS server
-WORKDIR /app
-COPY --from=server-builder /app/apps/server/dist ./dist
-COPY --from=server-builder /app/apps/server/package.json ./
+FROM server-builder AS server
+WORKDIR /app/apps/server
 ENV PORT=3000
 ENV NODE_ENV=production
 EXPOSE 3000
 CMD ["bun", "run", "dist/index.mjs"]
 
 # --- WEB RUNTIME ---
-FROM oven/bun:alpine AS web
-WORKDIR /app
-COPY --from=web-builder /app/apps/web/dist ./dist
-COPY --from=web-builder /app/apps/web/package.json ./
-COPY --from=web-builder /app/apps/web/serve.ts ./
+FROM web-builder AS web
+WORKDIR /app/apps/web
 ENV PORT=3001
 ENV NODE_ENV=production
 EXPOSE 3001
