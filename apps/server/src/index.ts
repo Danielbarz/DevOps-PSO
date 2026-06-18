@@ -30,6 +30,8 @@ const frontendIndexPath = path.join(
 	"index.html"
 );
 
+import fs from "node:fs";
+
 const app = new Elysia()
 	.use(authPlugin)
 	.onError(({ code, error, set }) => {
@@ -48,15 +50,21 @@ const app = new Elysia()
 			credentials: true,
 		})
 	)
-	.use(staticPlugin({ assets: frontendAssetsPath, prefix: "/" }))
 	.use(authModule)
 	.use(bookmarksModule)
 	.use(crawlerModule)
 	.use(papersModule)
-	.get("/health", () => ({ status: "ok" }))
-	.get("/*", () => {
+	.get("/health", () => ({ status: "ok" }));
+
+if (fs.existsSync(frontendAssetsPath)) {
+	app.use(staticPlugin({ assets: frontendAssetsPath, prefix: "/" }));
+}
+
+if (fs.existsSync(frontendIndexPath)) {
+	app.get("/*", () => {
 		return Bun.file(frontendIndexPath);
 	});
+}
 
 export default app;
 export type App = typeof app;
