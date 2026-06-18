@@ -37,9 +37,22 @@ function AuthSection() {
 	const [error, setError] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
 
-	const processLoginResult = (
-		data: { user?: unknown; token?: string } | undefined
-	) => {
+	const performLogin = async () => {
+		const { data, error: apiError } = await api.api.auth.login.post({
+			username,
+			password,
+		});
+
+		if (apiError) {
+			const errorMsg =
+				typeof apiError.value === "string"
+					? apiError.value
+					: (apiError.value as Record<string, unknown>)?.error ||
+						"Authentication failed";
+			setError(String(errorMsg));
+			return false;
+		}
+
 		if (data?.user && data?.token) {
 			// biome-ignore lint/suspicious/noExplicitAny: treaty type issue
 			setAuth(data.user as any, data.token);
@@ -49,42 +62,42 @@ function AuthSection() {
 		return false;
 	};
 
-	const performLogin = async () => {
-		const { data: loginData } = await api.api.auth.login.post({
+	const performRegister = async () => {
+		const { data, error: apiError } = await api.api.auth.register.post({
 			username,
 			password,
 		});
-		if (!processLoginResult(loginData as { user?: unknown; token?: string })) {
-			setError("Registered successfully! Please login.");
+
+		if (apiError) {
+			const errorMsg =
+				typeof apiError.value === "string"
+					? apiError.value
+					: (apiError.value as Record<string, unknown>)?.error ||
+						"Registration failed";
+			setError(String(errorMsg));
+			return false;
 		}
+
+		if (data?.user) {
+			// Auto-login after successful registration
+			const success = await performLogin();
+			if (!success) {
+				setError("Registered successfully! Please login.");
+			}
+			return true;
+		}
+		return false;
 	};
 
 	const handleAuth = async (isLogin: boolean) => {
 		try {
 			setIsLoading(true);
 			setError("");
-			const endpoint = isLogin ? api.api.auth.login : api.api.auth.register;
-			const { data, error: apiError } = await endpoint.post({
-				username,
-				password,
-			});
 
-			if (apiError) {
-				const errorMsg =
-					typeof apiError.value === "string"
-						? apiError.value
-						: (apiError.value as Record<string, unknown>)?.error ||
-							"Authentication failed";
-				setError(String(errorMsg));
-				return;
-			}
-
-			if (processLoginResult(data as { user?: unknown; token?: string })) {
-				return;
-			}
-
-			if (data?.user && !isLogin) {
+			if (isLogin) {
 				await performLogin();
+			} else {
+				await performRegister();
 			}
 		} catch (_e: unknown) {
 			setError("An error occurred");
@@ -162,7 +175,7 @@ function AuthSection() {
 							disabled={isLoading}
 							onClick={() => handleAuth(true)}
 						>
-							Login
+							{isLoading ? "Logging in..." : "Login"}
 						</Button>
 					</TabsContent>
 
@@ -191,7 +204,7 @@ function AuthSection() {
 							disabled={isLoading}
 							onClick={() => handleAuth(false)}
 						>
-							Register
+							{isLoading ? "Registering..." : "Register"}
 						</Button>
 					</TabsContent>
 				</Tabs>
