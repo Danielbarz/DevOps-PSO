@@ -28,7 +28,7 @@ services:
     restart: unless-stopped
 
   server:
-    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/scholar-seek-server:latest
+    image: ghcr.io/rafindita/devops-pso/server:latest
     environment:
       DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: ${REDIS_URL}
@@ -45,7 +45,7 @@ services:
     restart: unless-stopped
 
   web:
-    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/scholar-seek-web:latest
+    image: ghcr.io/rafindita/devops-pso/web:latest
     environment:
       VITE_SERVER_URL: ${VITE_SERVER_URL}
       NODE_ENV: production
