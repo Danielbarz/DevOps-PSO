@@ -16,7 +16,7 @@ export const api = treaty<App>(SERVER_URL, {
 			if (!options.headers) {
 				options.headers = {};
 			}
-			// @ts-ignore
+			// @ts-expect-error
 			options.headers.authorization = `Bearer ${token}`;
 		}
 	},
