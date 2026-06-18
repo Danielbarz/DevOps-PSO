@@ -9,22 +9,16 @@ const SERVER_URL =
 		: (import.meta.env.VITE_SERVER_URL ?? "http://localhost:3000");
 
 export const api = treaty<App>(SERVER_URL, {
-	fetcher: globalThis.fetch,
-	onRequest: (_path, options) => {
+	fetcher: ((input, init) => {
 		const token = useAuthStore.getState().token;
+		const options = init || {};
 		if (token) {
-			if (!options.headers) {
-				options.headers = {};
-			}
-			if (options.headers instanceof Headers) {
-				options.headers.set("authorization", `Bearer ${token}`);
-			} else if (Array.isArray(options.headers)) {
-				options.headers.push(["authorization", `Bearer ${token}`]);
-			} else {
-				options.headers.authorization = `Bearer ${token}`;
-			}
+			const headers = new Headers(options.headers || {});
+			headers.set("authorization", `Bearer ${token}`);
+			options.headers = headers;
 		}
-	},
+		return globalThis.fetch(input, options);
+	}) as typeof fetch,
 });
 
 export type Api = typeof api;
