@@ -11,7 +11,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { ArxivAbstract } from "../../components/paper/arxiv-abstract";
-import { BookmarkButton } from "../../components/paper/bookmark-button";
 import { usePaper, useRelatedPapers } from "../../lib/hooks/use-papers";
 import { getSearchState } from "../../lib/search-state";
 import { formatDate } from "../../lib/utils";
@@ -42,8 +41,6 @@ function PaperPage() {
 	const { data: paper, isLoading, error } = usePaper(id);
 	const { data: related } = useRelatedPapers(id);
 	const [backPath, setBackPath] = useState("/search");
-	// @ts-expect-error
-    const _dummyBookmark = <BookmarkButton paperId={id} />;
 
 	useEffect(() => {
 		const searchState = getSearchState();
