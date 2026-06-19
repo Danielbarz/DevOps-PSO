@@ -37,6 +37,7 @@ export function ResultCard({ paper }: ResultCardProps) {
 						{paper.title}
 					</CardTitle>
 				</Link>
+				// biome-ignore lint/correctness/noUnusedImports: for demo purposes
 				{/* <BookmarkButton
 					className="absolute top-4 right-4 z-10 text-muted-foreground hover:text-primary"
 					paperId={paper.id}
