@@ -365,10 +365,10 @@ export default function Header() {
 					<Link className="font-semibold text-xl" to="/">
 						Scholar Seek
 					</Link>
-					<ScrapingSection />
+					{/* <ScrapingSection /> */}
 				</div>
 				<div className="flex items-center gap-4">
-					<AuthSection />
+					{/* <AuthSection /> */}
 					<ThemeToggle />
 				</div>
 			</div>

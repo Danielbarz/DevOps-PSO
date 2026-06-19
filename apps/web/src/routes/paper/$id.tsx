@@ -98,7 +98,7 @@ function PaperPage() {
 					</Link>
 					<div className="mt-4 flex items-start justify-between gap-4">
 						<h1 className="font-bold text-3xl leading-tight">{paper.title}</h1>
-						<BookmarkButton className="mt-1 shrink-0" paperId={paper.id} />
+						{/* <BookmarkButton className="mt-1 shrink-0" paperId={paper.id} /> */}
 					</div>
 					<div className="mt-4 flex flex-wrap gap-1.5">
 						{paper.authors.map((author) => (
