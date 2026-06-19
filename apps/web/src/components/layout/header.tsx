@@ -28,8 +28,7 @@ import { useAuthStore } from "../../lib/store/auth";
 import { formatDate } from "../../lib/utils";
 import { ThemeToggle } from "./theme-toggle";
 
-// biome-ignore lint/correctness/noUnusedVariables: for demo purposes
-function AuthSection() {
+export function AuthSection() {
 	const [isMounted, setIsMounted] = useState(false);
 	const { user, setAuth, logout } = useAuthStore();
 	const [isOpen, setIsOpen] = useState(false);
@@ -209,8 +208,7 @@ function AuthSection() {
 	);
 }
 
-// biome-ignore lint/correctness/noUnusedVariables: for demo purposes
-function ScrapingSection() {
+export function ScrapingSection() {
 	const [isMounted, setIsMounted] = useState(false);
 	const queryClient = useQueryClient();
 	const { activeJobId, setActiveJobId } = useAuthStore();
