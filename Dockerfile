@@ -24,10 +24,9 @@ RUN bun run build --filter=@scholar-seek/web
 
 # --- SERVER RUNTIME ---
 FROM server-builder AS server
-WORKDIR /app
 
-# Copy migrations so migrate.mjs can find them
-COPY --from=server-builder /app/packages/db/src/migrations ./migrations
+# Copy migrations directly into the server app directory so migrate.mjs finds it
+COPY --from=server-builder /app/packages/db/src/migrations /app/apps/server/migrations
 
 WORKDIR /app/apps/server
 ENV PORT=3000
