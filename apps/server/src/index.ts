@@ -1,17 +1,55 @@
+import path from "node:path";
+import { staticPlugin } from "@elysia/static";
 import { cors } from "@elysiajs/cors";
 import { Elysia } from "elysia";
+
+import { authPlugin } from "./lib/auth";
 import { authModule } from "./modules/auth";
 import { bookmarksModule } from "./modules/bookmarks";
 import { crawlerModule } from "./modules/crawler";
+import {
+	cleanupStuckJobs,
+	startCrawlWorker,
+	stopCrawlWorker,
+} from "./modules/crawler/queue";
 import { papersModule } from "./modules/papers";
 
-// Inisialisasi aplikasi Elysia
+const frontendAssetsPath = path.join(
+	import.meta.dirname,
+	"..",
+	"..",
+	"web",
+	"dist"
+);
+const frontendIndexPath = path.join(
+	import.meta.dirname,
+	"..",
+	"..",
+	"web",
+	"dist",
+	"index.html"
+);
+
+import fs from "node:fs";
+
 const app = new Elysia()
+	.use(authPlugin)
+	.onError(({ code, error, set }) => {
+		if (code === "VALIDATION") {
+			set.status = 400;
+			return { error: error.message };
+		}
+		if (code === "NOT_FOUND") {
+			set.status = 404;
+			return { error: "Not Found" };
+		}
+		console.error(error);
+		set.status = 500;
+		return { error: "Internal Server Error" };
+	})
 	.use(
 		cors({
-			// Ganti dengan IP publik Azure Anda atau domain yang digunakan
-			origin: ["http://20.2.93.106:3001", "http://localhost:3001"],
-			methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+			origin: true,
 			allowedHeaders: ["Content-Type", "Authorization"],
 			credentials: true,
 		})
@@ -20,22 +58,54 @@ const app = new Elysia()
 	.use(bookmarksModule)
 	.use(crawlerModule)
 	.use(papersModule)
-	.get("/health", () => ({
-		status: "ok",
-		timestamp: new Date().toISOString(),
-	}));
+	.get("/health", () => ({ status: "ok" }))
+	.get("/api/db-test", async () => {
+		try {
+			const { db } = await import("@scholar-seek/db");
+			const { papers } = await import("@scholar-seek/db/schema/papers");
 
-// Konfigurasi Port
-const PORT = Number(process.env.PORT) || 3000;
+			await db.select().from(papers).limit(1);
 
-/**
- * Karena kita berjalan di VM (bukan Serverless),
- * kita WAJIB memanggil .listen() agar server aktif.
- */
-app.listen({ port: PORT, hostname: "0.0.0.0" }, (server) => {
-	console.log(
-		`API Server running at http://${server?.hostname}:${server?.port}`
-	);
-});
+			return { status: "db_ok" };
+		} catch (e: unknown) {
+			const result: Record<string, string> = { status: "failed" };
+			if (e instanceof Error) {
+				result.message = e.message;
+				if ("cause" in e && e.cause instanceof Error) {
+					result.cause = e.cause.message;
+				}
+			}
+			return result;
+		}
+	});
+
+if (fs.existsSync(frontendAssetsPath)) {
+	app.use(staticPlugin({ assets: frontendAssetsPath, prefix: "/" }));
+}
+
+if (fs.existsSync(frontendIndexPath)) {
+	app.get("/*", () => {
+		return Bun.file(frontendIndexPath);
+	});
+}
 
 export default app;
+export type App = typeof app;
+export { app };
+
+if (process.env.NODE_ENV !== "test") {
+	const PORT = Number(process.env.PORT) || 3000;
+	app.listen({ port: PORT, hostname: "0.0.0.0" }, (server) => {
+		console.log(`Server running at http://${server?.hostname}:${server?.port}`);
+	});
+
+	startCrawlWorker();
+
+	process.on("SIGINT", async () => {
+		console.log("Shutting down gracefully...");
+		await stopCrawlWorker();
+		await cleanupStuckJobs();
+		await app.stop();
+		process.exit(0);
+	});
+}

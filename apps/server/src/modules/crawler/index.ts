@@ -81,13 +81,19 @@ export const crawlerModule = new Elysia({
 	.get(
 		"/crawl/last-updated",
 		async ({ set }) => {
-			const { getLastUpdated } = await import("./service");
-			const result = await getLastUpdated();
-			if (!result) {
-				set.status = 404;
-				return { error: "No completed crawl history found" };
+			try {
+				const { getLastUpdated } = await import("./service");
+				const result = await getLastUpdated();
+				if (!result) {
+					set.status = 404;
+					return { error: "No completed crawl history found" };
+				}
+				return result;
+			} catch (err: unknown) {
+				console.error("[CRAWLER] Error in /crawl/last-updated:", err);
+				set.status = 500;
+				return { error: "Internal Server Error", detail: String(err) };
 			}
-			return result;
 		},
 		{
 			detail: {

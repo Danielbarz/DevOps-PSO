@@ -92,7 +92,8 @@ function HomeComponent() {
 
 			{/* Research Folders Widget */}
 			{token &&
-				collectionsData?.collections &&
+				collectionsData &&
+				"collections" in collectionsData &&
 				collectionsData.collections.length > 0 && (
 					<div className="motion-safe:fade-in motion-safe:slide-in-from-bottom-4 mb-16 w-full max-w-5xl fill-mode-both motion-safe:animate-in motion-safe:delay-200 motion-safe:duration-700">
 						<div className="mb-6 flex items-center justify-between">

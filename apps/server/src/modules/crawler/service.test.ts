@@ -189,3 +189,31 @@ describe("Crawler Service", () => {
 		expect(res).toBeNull();
 	});
 });
+
+test("getCrawlStatus returns null when row not found", async () => {
+	mockDb.select.mockImplementationOnce(
+		() =>
+			({
+				from: mock(() => ({
+					where: mock(() => ({
+						limit: mock(() => Promise.resolve([])),
+					})),
+				})),
+			}) as any
+	);
+
+	const result = await getCrawlStatus("not-exist");
+	expect(result).toBeNull();
+});
+
+test("startCrawl throws when history record creation fails", () => {
+	mockDb.insert.mockImplementationOnce(() => ({
+		values: mock(() => ({
+			returning: mock(() => Promise.resolve([])),
+		})),
+	}));
+
+	expect(startCrawl({ source: "arxiv" })).rejects.toThrow(
+		"Failed to create crawl history record"
+	);
+});

@@ -6,10 +6,10 @@ import {
 	CardTitle,
 } from "@scholar-seek/ui/components/card";
 import { Link } from "@tanstack/react-router";
+import { BookmarkButton } from "../../components/paper/bookmark-button";
 import { formatDate } from "../../lib/utils";
 import type { Paper } from "../../types/paper";
 import { ArxivAbstract } from "../paper/arxiv-abstract";
-import { BookmarkButton } from "../paper/bookmark-button";
 
 interface ResultCardProps {
 	paper: Paper;

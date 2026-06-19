@@ -37,25 +37,51 @@ function AuthSection() {
 	const [error, setError] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
 
-	const processLoginResult = (
-		data: { user?: unknown; token?: string } | undefined
-	) => {
+	const handleLogin = async () => {
+		const { data, error: apiError } = await api.api.auth.login.post({
+			username,
+			password,
+		});
+		if (apiError) {
+			const errorMsg =
+				typeof apiError.value === "string"
+					? apiError.value
+					: (apiError.value as Record<string, unknown>)?.error ||
+						"Authentication failed";
+			setError(String(errorMsg));
+			return;
+		}
 		if (data?.user && data?.token) {
 			// biome-ignore lint/suspicious/noExplicitAny: treaty type issue
 			setAuth(data.user as any, data.token);
 			setIsOpen(false);
-			return true;
 		}
-		return false;
 	};
 
-	const performLogin = async () => {
-		const { data: loginData } = await api.api.auth.login.post({
+	const handleRegister = async () => {
+		const { data, error: apiError } = await api.api.auth.register.post({
 			username,
 			password,
 		});
-		if (!processLoginResult(loginData as { user?: unknown; token?: string })) {
-			setError("Registered successfully! Please login.");
+		if (apiError) {
+			const errorMsg =
+				typeof apiError.value === "string"
+					? apiError.value
+					: (apiError.value as Record<string, unknown>)?.error ||
+						"Registration failed";
+			setError(String(errorMsg));
+			return;
+		}
+		if (data?.user) {
+			const { data: loginData, error: loginError } =
+				await api.api.auth.login.post({ username, password });
+			if (loginError || !loginData?.token) {
+				setError("Registered successfully! Please login.");
+				return;
+			}
+			// biome-ignore lint/suspicious/noExplicitAny: treaty type issue
+			setAuth(loginData.user as any, loginData.token);
+			setIsOpen(false);
 		}
 	};
 
@@ -63,28 +89,10 @@ function AuthSection() {
 		try {
 			setIsLoading(true);
 			setError("");
-			const endpoint = isLogin ? api.api.auth.login : api.api.auth.register;
-			const { data, error: apiError } = await endpoint.post({
-				username,
-				password,
-			});
-
-			if (apiError) {
-				const errorMsg =
-					typeof apiError.value === "string"
-						? apiError.value
-						: (apiError.value as Record<string, unknown>)?.error ||
-							"Authentication failed";
-				setError(String(errorMsg));
-				return;
-			}
-
-			if (processLoginResult(data as { user?: unknown; token?: string })) {
-				return;
-			}
-
-			if (data?.user && !isLogin) {
-				await performLogin();
+			if (isLogin) {
+				await handleLogin();
+			} else {
+				await handleRegister();
 			}
 		} catch (_e: unknown) {
 			setError("An error occurred");
@@ -111,6 +119,9 @@ function AuthSection() {
 					</Avatar>
 					<span className="font-medium text-sm">{user.username}</span>
 				</div>
+				<Button render={<Link to="/bookmarks" />} size="sm" variant="outline">
+					Bookmarks
+				</Button>
 				<Button onClick={logout} size="sm" variant="outline">
 					Logout
 				</Button>
@@ -120,11 +131,8 @@ function AuthSection() {
 
 	return (
 		<Dialog onOpenChange={setIsOpen} open={isOpen}>
-			{/* @ts-ignore */}
-			<DialogTrigger asChild>
-				<Button size="sm" variant="outline">
-					Login / Register
-				</Button>
+			<DialogTrigger render={<Button size="sm" variant="outline" />}>
+				Login / Register
 			</DialogTrigger>
 			<DialogContent className="sm:max-w-md">
 				<DialogHeader>
@@ -162,7 +170,7 @@ function AuthSection() {
 							disabled={isLoading}
 							onClick={() => handleAuth(true)}
 						>
-							Login
+							{isLoading ? "Logging in..." : "Login"}
 						</Button>
 					</TabsContent>
 
@@ -191,7 +199,7 @@ function AuthSection() {
 							disabled={isLoading}
 							onClick={() => handleAuth(false)}
 						>
-							Register
+							{isLoading ? "Registering..." : "Register"}
 						</Button>
 					</TabsContent>
 				</Tabs>
@@ -214,12 +222,7 @@ function ScrapingSection() {
 		queryFn: async () => {
 			const { data, error } = await api.api.crawl["last-updated"].get();
 			if (error) {
-				if (
-					(error.status as number) === 401 ||
-					(error.status as number) === 500
-				) {
-					useAuthStore.getState().logout();
-				}
+				// ✅ Don't auto-logout on 401 — crawl endpoint failing shouldn't sign the user out
 				if (error.status === 404) {
 					return null;
 				}
@@ -241,12 +244,7 @@ function ScrapingSection() {
 				.status({ jobId: activeJobId })
 				.get();
 			if (error) {
-				if (
-					(error.status as number) === 401 ||
-					(error.status as number) === 500
-				) {
-					useAuthStore.getState().logout();
-				}
+				// ✅ Don't auto-logout on 401 — crawl endpoint failing shouldn't sign the user out
 				if (error.status === 404) {
 					setActiveJobId(null);
 				}
